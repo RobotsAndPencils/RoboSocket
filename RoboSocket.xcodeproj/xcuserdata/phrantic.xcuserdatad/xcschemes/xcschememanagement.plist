@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>SchemeUserState</key>
+	<dict>
+		<key>RoboSocket.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>0</integer>
+		</dict>
+		<key>RoboSocketExample.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>1</integer>
+		</dict>
+	</dict>
+	<key>SuppressBuildableAutocreation</key>
+	<dict>
+		<key>4F50DAE6180EE6530035BE77</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>4F50DB0A180EE6530035BE77</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>4F50DB25180EEFE80035BE77</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>4F50DB32180EEFE80035BE77</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>4FBFFFEC1821767E0017C48C</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>4FBFFFF0182178890017C48C</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>4FBFFFF4182178BC0017C48C</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+	</dict>
+</dict>
+</plist>
