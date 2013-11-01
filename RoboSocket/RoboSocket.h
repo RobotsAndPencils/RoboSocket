@@ -10,4 +10,9 @@
 
 @interface RoboSocket : NSObject
 
+- (instancetype)initWithSocketURL:(NSURL *)socketURL;
+- (void)openSocket;
+- (void)closeSocket;
+- (void)sendMessageToSocket:(NSString *)message;
+
 @end

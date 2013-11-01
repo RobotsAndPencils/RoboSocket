@@ -33,6 +33,8 @@
 		4F88E57D180F95FC00663E45 /* MobileCoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 716DACB1180F7C4200D3779F /* MobileCoreServices.framework */; };
 		4F88E57E180F960200663E45 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F88E57B180F93E200663E45 /* SystemConfiguration.framework */; };
 		4F8ED12C182447F800055715 /* libicucore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F8ED12B182447F800055715 /* libicucore.dylib */; };
+		4F8ED12F18245D3900055715 /* RBKSocketOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F8ED12E18245D3900055715 /* RBKSocketOperation.m */; };
+		4F8ED13218245D5500055715 /* RBKSocketListener.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F8ED13118245D5500055715 /* RBKSocketListener.m */; };
 		4FBFFFEB1820C3BC0017C48C /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4F7F5A15180EF74200534BC7 /* Images.xcassets */; };
 		4FD9F27A182187FD00D7F891 /* libRoboSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F50DB26180EEFE80035BE77 /* libRoboSocket.a */; };
 		716DACB2180F7C4200D3779F /* MobileCoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 716DACB1180F7C4200D3779F /* MobileCoreServices.framework */; };
@@ -102,6 +104,10 @@
 		4F7F5A24180EFE7D00534BC7 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = Example/RoboSocketExampleTests/en.lproj/InfoPlist.strings; sourceTree = SOURCE_ROOT; };
 		4F88E57B180F93E200663E45 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
 		4F8ED12B182447F800055715 /* libicucore.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libicucore.dylib; path = usr/lib/libicucore.dylib; sourceTree = SDKROOT; };
+		4F8ED12D18245D3900055715 /* RBKSocketOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RBKSocketOperation.h; sourceTree = "<group>"; };
+		4F8ED12E18245D3900055715 /* RBKSocketOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RBKSocketOperation.m; sourceTree = "<group>"; };
+		4F8ED13018245D5500055715 /* RBKSocketListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RBKSocketListener.h; sourceTree = "<group>"; };
+		4F8ED13118245D5500055715 /* RBKSocketListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RBKSocketListener.m; sourceTree = "<group>"; };
 		716DACB1180F7C4200D3779F /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
 		8B10DF9629234C73ABAEC8D8 /* libPods-RoboSocket.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-RoboSocket.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		92B55252026D4DA1939B9CE7 /* Pods-RoboSocket.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RoboSocket.xcconfig"; path = "Pods/Pods-RoboSocket.xcconfig"; sourceTree = "<group>"; };
@@ -251,6 +257,10 @@
 			children = (
 				4F50DB2B180EEFE80035BE77 /* RoboSocket.h */,
 				4F50DB2D180EEFE80035BE77 /* RoboSocket.m */,
+				4F8ED12D18245D3900055715 /* RBKSocketOperation.h */,
+				4F8ED12E18245D3900055715 /* RBKSocketOperation.m */,
+				4F8ED13018245D5500055715 /* RBKSocketListener.h */,
+				4F8ED13118245D5500055715 /* RBKSocketListener.m */,
 				4F50DB29180EEFE80035BE77 /* Supporting Files */,
 			);
 			path = RoboSocket;
@@ -513,6 +523,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4F8ED13218245D5500055715 /* RBKSocketListener.m in Sources */,
+				4F8ED12F18245D3900055715 /* RBKSocketOperation.m in Sources */,
 				4F50DB2E180EEFE80035BE77 /* RoboSocket.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
