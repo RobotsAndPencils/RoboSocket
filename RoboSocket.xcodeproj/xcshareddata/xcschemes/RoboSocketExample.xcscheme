@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "4F50DAE6180EE6530035BE77"
-               BuildableName = "RoboSocket.app"
+               BuildableName = "RoboSocketExample.app"
                BlueprintName = "RoboSocketExample"
                ReferencedContainer = "container:RoboSocket.xcodeproj">
             </BuildableReference>
@@ -33,7 +33,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "4F50DB0A180EE6530035BE77"
-               BuildableName = "RoboSocketTests.xctest"
+               BuildableName = "RoboSocketExampleTests.xctest"
                BlueprintName = "RoboSocketExampleTests"
                ReferencedContainer = "container:RoboSocket.xcodeproj">
             </BuildableReference>
@@ -43,7 +43,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "4F50DAE6180EE6530035BE77"
-            BuildableName = "RoboSocket.app"
+            BuildableName = "RoboSocketExample.app"
             BlueprintName = "RoboSocketExample"
             ReferencedContainer = "container:RoboSocket.xcodeproj">
          </BuildableReference>
@@ -62,7 +62,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "4F50DAE6180EE6530035BE77"
-            BuildableName = "RoboSocket.app"
+            BuildableName = "RoboSocketExample.app"
             BlueprintName = "RoboSocketExample"
             ReferencedContainer = "container:RoboSocket.xcodeproj">
          </BuildableReference>
@@ -80,7 +80,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "4F50DAE6180EE6530035BE77"
-            BuildableName = "RoboSocket.app"
+            BuildableName = "RoboSocketExample.app"
             BlueprintName = "RoboSocketExample"
             ReferencedContainer = "container:RoboSocket.xcodeproj">
          </BuildableReference>
