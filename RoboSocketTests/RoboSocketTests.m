@@ -11,11 +11,11 @@
 #define EXP_SHORTHAND YES
 #import <Expecta/Expecta.h>
 
-#import "RoboSocket.h"
+#import "RBKSocketManager.h"
 
 @interface RoboSocketTests : XCTestCase
 
-@property (strong, nonatomic) RoboSocket *socket;
+@property (strong, nonatomic) RBKSocketManager *socketManager;
 
 @end
 
@@ -26,7 +26,7 @@
     [super setUp];
     // Put setup code here. This method is called before the invocation of each test method in the class.
     
-    self.socket = [[RoboSocket alloc] initWithSocketURL:[NSURL URLWithString:@"ws://echo.websocket.org"]];
+    self.socketManager = [[RBKSocketManager alloc] initWithSocketURL:[NSURL URLWithString:@"ws://echo.websocket.org"]];
 }
 
 - (void)tearDown
@@ -39,8 +39,11 @@
 {
     // XCTFail(@"No implementation for \"%s\"", __PRETTY_FUNCTION__);
     
-    [self.socket sendMessageToSocket:@"hello"];
-    
+    [self.socketManager sendSocketOperationWithMessage:@"Hello, World!" success:^(RBKSocketOperation *operation, id responseObject) {
+        NSLog(@"success");
+    } failure:^(RBKSocketOperation *operation, NSError *error) {
+        NSLog(@"failure");
+    }];
 }
 
 @end

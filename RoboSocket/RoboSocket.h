@@ -13,6 +13,6 @@
 - (instancetype)initWithSocketURL:(NSURL *)socketURL;
 - (void)openSocket;
 - (void)closeSocket;
-- (void)sendMessageToSocket:(NSString *)message;
+- (void)sendMessage:(NSString *)message;
 
 @end

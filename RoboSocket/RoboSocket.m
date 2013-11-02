@@ -23,7 +23,6 @@
     @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:[NSString stringWithFormat:@"%@ Failed to call designated initializer. Invoke `initWithSocketURL:` instead.", NSStringFromClass([self class])] userInfo:nil];
 }
 
-// [NSURL URLWithString:@"ws://echo.websocket.org"]
 - (instancetype)initWithSocketURL:(NSURL *)socketURL {
     self = [super init];
     if (self) {
@@ -42,7 +41,7 @@
     [self.socket close];
 }
 
-- (void)sendMessageToSocket:(NSString *)message {
+- (void)sendMessage:(NSString *)message {
     [self.socket send:message];
 }
 

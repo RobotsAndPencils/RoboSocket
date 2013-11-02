@@ -35,6 +35,9 @@
 		4F8ED12C182447F800055715 /* libicucore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F8ED12B182447F800055715 /* libicucore.dylib */; };
 		4F8ED12F18245D3900055715 /* RBKSocketOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F8ED12E18245D3900055715 /* RBKSocketOperation.m */; };
 		4F8ED13218245D5500055715 /* RBKSocketListener.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F8ED13118245D5500055715 /* RBKSocketListener.m */; };
+		4F8ED13B182467E100055715 /* RBKSocketManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F8ED13A182467E100055715 /* RBKSocketManager.m */; };
+		4F8ED140182477A300055715 /* RBKSocketRequestSerialization.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F8ED13D182477A300055715 /* RBKSocketRequestSerialization.m */; };
+		4F8ED141182477A300055715 /* RBKSocketResponseSerialization.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F8ED13F182477A300055715 /* RBKSocketResponseSerialization.m */; };
 		4FBFFFEB1820C3BC0017C48C /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4F7F5A15180EF74200534BC7 /* Images.xcassets */; };
 		4FD9F27A182187FD00D7F891 /* libRoboSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F50DB26180EEFE80035BE77 /* libRoboSocket.a */; };
 		716DACB2180F7C4200D3779F /* MobileCoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 716DACB1180F7C4200D3779F /* MobileCoreServices.framework */; };
@@ -108,6 +111,12 @@
 		4F8ED12E18245D3900055715 /* RBKSocketOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RBKSocketOperation.m; sourceTree = "<group>"; };
 		4F8ED13018245D5500055715 /* RBKSocketListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RBKSocketListener.h; sourceTree = "<group>"; };
 		4F8ED13118245D5500055715 /* RBKSocketListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RBKSocketListener.m; sourceTree = "<group>"; };
+		4F8ED139182467E100055715 /* RBKSocketManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RBKSocketManager.h; sourceTree = "<group>"; };
+		4F8ED13A182467E100055715 /* RBKSocketManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RBKSocketManager.m; sourceTree = "<group>"; };
+		4F8ED13C182477A300055715 /* RBKSocketRequestSerialization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RBKSocketRequestSerialization.h; sourceTree = "<group>"; };
+		4F8ED13D182477A300055715 /* RBKSocketRequestSerialization.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RBKSocketRequestSerialization.m; sourceTree = "<group>"; };
+		4F8ED13E182477A300055715 /* RBKSocketResponseSerialization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RBKSocketResponseSerialization.h; sourceTree = "<group>"; };
+		4F8ED13F182477A300055715 /* RBKSocketResponseSerialization.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RBKSocketResponseSerialization.m; sourceTree = "<group>"; };
 		716DACB1180F7C4200D3779F /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
 		8B10DF9629234C73ABAEC8D8 /* libPods-RoboSocket.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-RoboSocket.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		92B55252026D4DA1939B9CE7 /* Pods-RoboSocket.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RoboSocket.xcconfig"; path = "Pods/Pods-RoboSocket.xcconfig"; sourceTree = "<group>"; };
@@ -169,10 +178,10 @@
 		4F50DADE180EE6530035BE77 = {
 			isa = PBXGroup;
 			children = (
-				4F50DAF0180EE6530035BE77 /* RoboSocketExample */,
-				4F50DB12180EE6530035BE77 /* RoboSocketExampleTests */,
 				4F50DB28180EEFE80035BE77 /* RoboSocket */,
 				4F50DB3A180EEFE80035BE77 /* RoboSocketTests */,
+				4F50DAF0180EE6530035BE77 /* RoboSocketExample */,
+				4F50DB12180EE6530035BE77 /* RoboSocketExampleTests */,
 				4F50DAE9180EE6530035BE77 /* Frameworks */,
 				4F50DAE8180EE6530035BE77 /* Products */,
 				B81ED2B89B1B1B24906A490C /* Podfile */,
@@ -261,6 +270,12 @@
 				4F8ED12E18245D3900055715 /* RBKSocketOperation.m */,
 				4F8ED13018245D5500055715 /* RBKSocketListener.h */,
 				4F8ED13118245D5500055715 /* RBKSocketListener.m */,
+				4F8ED139182467E100055715 /* RBKSocketManager.h */,
+				4F8ED13A182467E100055715 /* RBKSocketManager.m */,
+				4F8ED13C182477A300055715 /* RBKSocketRequestSerialization.h */,
+				4F8ED13D182477A300055715 /* RBKSocketRequestSerialization.m */,
+				4F8ED13E182477A300055715 /* RBKSocketResponseSerialization.h */,
+				4F8ED13F182477A300055715 /* RBKSocketResponseSerialization.m */,
 				4F50DB29180EEFE80035BE77 /* Supporting Files */,
 			);
 			path = RoboSocket;
@@ -523,9 +538,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4F8ED13B182467E100055715 /* RBKSocketManager.m in Sources */,
 				4F8ED13218245D5500055715 /* RBKSocketListener.m in Sources */,
 				4F8ED12F18245D3900055715 /* RBKSocketOperation.m in Sources */,
 				4F50DB2E180EEFE80035BE77 /* RoboSocket.m in Sources */,
+				4F8ED141182477A300055715 /* RBKSocketResponseSerialization.m in Sources */,
+				4F8ED140182477A300055715 /* RBKSocketRequestSerialization.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

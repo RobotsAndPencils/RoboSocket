@@ -8,6 +8,301 @@
 
 #import "RBKSocketOperation.h"
 
+typedef NS_ENUM(NSInteger, RBKSocketOperationState) {
+    RBKSocketOperationPausedState      = -1,
+    RBKSocketOperationReadyState       = 1,
+    RBKSocketOperationExecutingState   = 2,
+    RBKSocketOperationFinishedState    = 3,
+};
+
+
+static dispatch_queue_t http_request_operation_processing_queue() {
+    static dispatch_queue_t af_http_request_operation_processing_queue;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        af_http_request_operation_processing_queue = dispatch_queue_create("com.robotsandpencils.networking.websocket.processing", DISPATCH_QUEUE_CONCURRENT);
+    });
+    
+    return af_http_request_operation_processing_queue;
+}
+
+static dispatch_group_t http_request_operation_completion_group() {
+    static dispatch_group_t af_http_request_operation_completion_group;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        af_http_request_operation_completion_group = dispatch_group_create();
+    });
+    
+    return af_http_request_operation_completion_group;
+}
+
+NSString * const RBKSocketNetworkingErrorDomain = @"RBKSocketNetworkingErrorDomain";
+NSString * const RBKSocketNetworkingOperationFailingURLRequestErrorKey = @"RBKSocketNetworkingOperationFailingURLRequestErrorKey";
+NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey = @"RBKSocketNetworkingOperationFailingURLResponseErrorKey";
+
+NSString * const RBKSocketOperationDidStartNotification = @"com.robotsandpencils.networking.operation.start";
+NSString * const RBKSocketOperationDidFinishNotification = @"com.robotsandpencils.networking.operation.finish";
+
+static inline NSString * AFKeyPathFromOperationState(RBKSocketOperationState state) {
+    switch (state) {
+        case RBKSocketOperationReadyState:
+            return @"isReady";
+        case RBKSocketOperationExecutingState:
+            return @"isExecuting";
+        case RBKSocketOperationFinishedState:
+            return @"isFinished";
+        case RBKSocketOperationPausedState:
+            return @"isPaused";
+        default:
+            return @"state";
+    }
+}
+
+static inline BOOL AFStateTransitionIsValid(RBKSocketOperationState fromState, RBKSocketOperationState toState, BOOL isCancelled) {
+    switch (fromState) {
+        case RBKSocketOperationReadyState:
+            switch (toState) {
+                case RBKSocketOperationPausedState:
+                case RBKSocketOperationExecutingState:
+                    return YES;
+                case RBKSocketOperationFinishedState:
+                    return isCancelled;
+                default:
+                    return NO;
+            }
+        case RBKSocketOperationExecutingState:
+            switch (toState) {
+                case RBKSocketOperationPausedState:
+                case RBKSocketOperationFinishedState:
+                    return YES;
+                default:
+                    return NO;
+            }
+        case RBKSocketOperationFinishedState:
+            return NO;
+        case RBKSocketOperationPausedState:
+            return toState == RBKSocketOperationReadyState;
+        default:
+            return YES;
+    }
+}
+
+
+
+@interface RBKSocketOperation ()
+
+@property (readwrite, nonatomic, assign) RBKSocketOperationState state;
+@property (readwrite, nonatomic, assign, getter = isCancelled) BOOL cancelled;
+@property (readwrite, nonatomic, strong) NSString *message;
+@property (readwrite, nonatomic, strong) id response;
+@property (readwrite, nonatomic, strong) id responseObject;
+@property (readwrite, nonatomic, strong) NSError *responseSerializationError;
+@property (readwrite, nonatomic, strong) NSRecursiveLock *lock;
+
+@end
+
+
 @implementation RBKSocketOperation
+
++ (void)networkRequestThreadEntryPoint:(id)__unused object {
+    @autoreleasepool {
+        [[NSThread currentThread] setName:@"RBKSocket"];
+        
+        NSRunLoop *runLoop = [NSRunLoop currentRunLoop];
+        [runLoop addPort:[NSMachPort port] forMode:NSDefaultRunLoopMode];
+        [runLoop run];
+    }
+}
+
++ (NSThread *)networkRequestThread {
+    static NSThread *_networkRequestThread = nil;
+    static dispatch_once_t oncePredicate;
+    dispatch_once(&oncePredicate, ^{
+        _networkRequestThread = [[NSThread alloc] initWithTarget:self selector:@selector(networkRequestThreadEntryPoint:) object:nil];
+        [_networkRequestThread start];
+    });
+    
+    return _networkRequestThread;
+}
+
+- (instancetype)initWithRequestMessage:(NSString *)message {
+    NSParameterAssert(message);
+    
+    self = [super init];
+    if (!self) {
+		return nil;
+    }
+    
+    // self.lock = [[NSRecursiveLock alloc] init];
+    // self.lock.name = kAFNetworkingLockName;
+    
+    // self.runLoopModes = [NSSet setWithObject:NSRunLoopCommonModes];
+    
+    self.message = message;
+    
+    // self.shouldUseCredentialStorage = YES;
+    
+    self.state = RBKSocketOperationReadyState;
+    
+    // self.securityPolicy = [AFSecurityPolicy defaultPolicy];
+    
+    return self;
+}
+
+- (id)responseObject {
+    [self.lock lock];
+    if (!_responseObject && [self isFinished] && !self.error) {
+        NSError *error = nil;
+        self.responseObject = [self.responseSerializer responseObjectForResponse:self.response data:self.responseData error:&error];
+        if (error) {
+            self.responseSerializationError = error;
+        }
+    }
+    [self.lock unlock];
+    
+    return _responseObject;
+}
+
+
+#pragma mark - RBKSocketOperation
+
+- (void)setCompletionBlockWithSuccess:(void (^)(RBKSocketOperation *operation, id responseObject))success
+                              failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure
+{
+    // completionBlock is manually nilled out in AFURLConnectionOperation to break the retain cycle.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-retain-cycles"
+#pragma clang diagnostic ignored "-Wgnu"
+    self.completionBlock = ^{
+        if (self.completionGroup) {
+            dispatch_group_enter(self.completionGroup);
+        }
+        
+        dispatch_async(http_request_operation_processing_queue(), ^{
+            if (self.error) {
+                if (failure) {
+                    dispatch_group_async(self.completionGroup ?: http_request_operation_completion_group(), self.completionQueue ?: dispatch_get_main_queue(), ^{
+                        failure(self, self.error);
+                    });
+                }
+            } else {
+                id responseObject = self.responseObject;
+                if (self.error) {
+                    if (failure) {
+                        dispatch_group_async(self.completionGroup ?: http_request_operation_completion_group(), self.completionQueue ?: dispatch_get_main_queue(), ^{
+                            failure(self, self.error);
+                        });
+                    }
+                } else {
+                    if (success) {
+                        dispatch_group_async(self.completionGroup ?: http_request_operation_completion_group(), self.completionQueue ?: dispatch_get_main_queue(), ^{
+                            success(self, responseObject);
+                        });
+                    }
+                }
+            }
+            
+            if (self.completionGroup) {
+                dispatch_group_leave(self.completionGroup);
+            }
+        });
+    };
+#pragma clang diagnostic pop
+}
+
+
+#pragma mark - NSOperation
+
+- (BOOL)isReady {
+    return self.state == RBKSocketOperationReadyState && [super isReady];
+}
+
+- (BOOL)isExecuting {
+    return self.state == RBKSocketOperationExecutingState;
+}
+
+- (BOOL)isFinished {
+    return self.state == RBKSocketOperationFinishedState;
+}
+
+- (BOOL)isConcurrent {
+    return YES;
+}
+
+- (void)start {
+    [self.lock lock];
+    if ([self isReady]) {
+        self.state = RBKSocketOperationExecutingState;
+        
+        [self performSelector:@selector(operationDidStart) onThread:[[self class] networkRequestThread] withObject:nil waitUntilDone:NO modes:[self.runLoopModes allObjects]];
+    }
+    [self.lock unlock];
+}
+
+- (void)operationDidStart {
+    [self.lock lock];
+    if (! [self isCancelled]) {
+        // self.connection = [[NSURLConnection alloc] initWithRequest:self.request delegate:self startImmediately:NO];
+        
+//        NSRunLoop *runLoop = [NSRunLoop currentRunLoop];
+//        for (NSString *runLoopMode in self.runLoopModes) {
+//            // [self.connection scheduleInRunLoop:runLoop forMode:runLoopMode];
+//            // [self.outputStream scheduleInRunLoop:runLoop forMode:runLoopMode];
+//            NSLog(@"...");
+//        }
+        
+        // [self.connection start];
+        NSLog(@"start");
+        // this is probably where we should start our socket message
+    }
+    [self.lock unlock];
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [[NSNotificationCenter defaultCenter] postNotificationName:RBKSocketOperationDidStartNotification object:self];
+    });
+    
+    if ([self isCancelled]) {
+        [self finish];
+    }
+}
+
+- (void)finish {
+    self.state = RBKSocketOperationFinishedState;
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [[NSNotificationCenter defaultCenter] postNotificationName:RBKSocketOperationDidFinishNotification object:self];
+    });
+}
+
+- (void)cancel {
+    [self.lock lock];
+    if (![self isFinished] && ![self isCancelled]) {
+        [self willChangeValueForKey:@"isCancelled"];
+        _cancelled = YES;
+        [super cancel];
+        [self didChangeValueForKey:@"isCancelled"];
+        
+        // Cancel the connection on the thread it runs on to prevent race conditions
+        [self performSelector:@selector(cancelConnection) onThread:[[self class] networkRequestThread] withObject:nil waitUntilDone:NO modes:[self.runLoopModes allObjects]];
+    }
+    [self.lock unlock];
+}
+
+- (void)cancelConnection {
+    NSDictionary *userInfo = nil;
+    
+    // instead of a request, we have a message
+    
+    if (0 /*[self.request URL]*/) {
+        userInfo = [NSDictionary dictionaryWithObject:@"our-socket?" /*[self.request URL]*/ forKey:NSURLErrorFailingURLErrorKey];
+    }
+    // NSError *error = [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorCancelled userInfo:userInfo];
+    
+    if (![self isFinished] /*&& self.connection*/) {
+        // [self.connection cancel];
+        // [self performSelector:@selector(connection:didFailWithError:) withObject:self.connection withObject:error];
+    }
+}
+
 
 @end
