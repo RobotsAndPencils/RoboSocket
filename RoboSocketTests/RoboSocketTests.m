@@ -21,29 +21,32 @@
 
 @implementation RoboSocketTests
 
-- (void)setUp
-{
+- (void)setUp {
     [super setUp];
     // Put setup code here. This method is called before the invocation of each test method in the class.
-    
+    [Expecta setAsynchronousTestTimeout:60.0];
+
     self.socketManager = [[RBKSocketManager alloc] initWithSocketURL:[NSURL URLWithString:@"ws://echo.websocket.org"]];
 }
 
-- (void)tearDown
-{
+- (void)tearDown {
     // Put teardown code here. This method is called after the invocation of each test method in the class.
     [super tearDown];
 }
 
-- (void)testExample
-{
-    // XCTFail(@"No implementation for \"%s\"", __PRETTY_FUNCTION__);
+- (void)testExample {
     
-    [self.socketManager sendSocketOperationWithMessage:@"Hello, World!" success:^(RBKSocketOperation *operation, id responseObject) {
-        NSLog(@"success");
+    __block BOOL success = NO;
+    NSString *sentMessage = @"Hello, World!";
+    __block NSString *responseMessage = nil;
+    [self.socketManager sendSocketOperationWithMessage:sentMessage success:^(RBKSocketOperation *operation, id responseObject) {
+        success = YES;
+        responseMessage = responseObject;
     } failure:^(RBKSocketOperation *operation, NSError *error) {
-        NSLog(@"failure");
+        success = NO;
     }];
+    expect(success).will.beTruthy();
+    expect(responseMessage).will.equal(sentMessage);
 }
 
 @end

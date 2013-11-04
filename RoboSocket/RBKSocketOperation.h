@@ -9,7 +9,7 @@
 #import <Foundation/Foundation.h>
 
 #import "RBKSocketResponseSerialization.h"
-
+#import "RoboSocket.h"
 
 @interface RBKSocketOperation : NSOperation
 
@@ -85,6 +85,11 @@ extern NSString * const RBKSocketOperationDidStartNotification;
  Posted when an operation finishes.
  */
 extern NSString * const RBKSocketOperationDidFinishNotification;
+
+
+///
+
+@property (nonatomic, strong) RoboSocket *socket;
 
 
 - (instancetype)initWithRequestMessage:(NSString *)message;

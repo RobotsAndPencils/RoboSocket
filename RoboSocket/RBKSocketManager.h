@@ -12,8 +12,6 @@
 
 @interface RBKSocketManager : NSObject
 
-@property (nonatomic, strong) NSOperationQueue *operationQueue;
-
 
 - (instancetype)initWithSocketURL:(NSURL *)socketURL;
 

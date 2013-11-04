@@ -36,6 +36,8 @@ static dispatch_group_t http_request_operation_completion_group() {
     return af_http_request_operation_completion_group;
 }
 
+static NSString * const kRBKSocketNetworkingLockName = @"com.robotsandpencils.networking.operation.lock";
+
 NSString * const RBKSocketNetworkingErrorDomain = @"RBKSocketNetworkingErrorDomain";
 NSString * const RBKSocketNetworkingOperationFailingURLRequestErrorKey = @"RBKSocketNetworkingOperationFailingURLRequestErrorKey";
 NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey = @"RBKSocketNetworkingOperationFailingURLResponseErrorKey";
@@ -43,7 +45,7 @@ NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey = @"RBKS
 NSString * const RBKSocketOperationDidStartNotification = @"com.robotsandpencils.networking.operation.start";
 NSString * const RBKSocketOperationDidFinishNotification = @"com.robotsandpencils.networking.operation.finish";
 
-static inline NSString * AFKeyPathFromOperationState(RBKSocketOperationState state) {
+static inline NSString * RBKSocketKeyPathFromOperationState(RBKSocketOperationState state) {
     switch (state) {
         case RBKSocketOperationReadyState:
             return @"isReady";
@@ -58,7 +60,7 @@ static inline NSString * AFKeyPathFromOperationState(RBKSocketOperationState sta
     }
 }
 
-static inline BOOL AFStateTransitionIsValid(RBKSocketOperationState fromState, RBKSocketOperationState toState, BOOL isCancelled) {
+static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromState, RBKSocketOperationState toState, BOOL isCancelled) {
     switch (fromState) {
         case RBKSocketOperationReadyState:
             switch (toState) {
@@ -89,13 +91,18 @@ static inline BOOL AFStateTransitionIsValid(RBKSocketOperationState fromState, R
 
 
 
-@interface RBKSocketOperation ()
+@interface RBKSocketOperation () <RBKSocketMessageDelegate>
 
 @property (readwrite, nonatomic, assign) RBKSocketOperationState state;
 @property (readwrite, nonatomic, assign, getter = isCancelled) BOOL cancelled;
 @property (readwrite, nonatomic, strong) NSString *message;
 @property (readwrite, nonatomic, strong) id response;
 @property (readwrite, nonatomic, strong) id responseObject;
+
+@property (readwrite, nonatomic, strong) NSError *error;
+@property (readwrite, nonatomic, strong) NSData *responseData;
+@property (readwrite, nonatomic, copy) NSString *responseString;
+
 @property (readwrite, nonatomic, strong) NSError *responseSerializationError;
 @property (readwrite, nonatomic, strong) NSRecursiveLock *lock;
 
@@ -133,10 +140,10 @@ static inline BOOL AFStateTransitionIsValid(RBKSocketOperationState fromState, R
 		return nil;
     }
     
-    // self.lock = [[NSRecursiveLock alloc] init];
-    // self.lock.name = kAFNetworkingLockName;
+    self.lock = [[NSRecursiveLock alloc] init];
+    self.lock.name = kRBKSocketNetworkingLockName;
     
-    // self.runLoopModes = [NSSet setWithObject:NSRunLoopCommonModes];
+    self.runLoopModes = [NSSet setWithObject:NSRunLoopCommonModes];
     
     self.message = message;
     
@@ -153,7 +160,9 @@ static inline BOOL AFStateTransitionIsValid(RBKSocketOperationState fromState, R
     [self.lock lock];
     if (!_responseObject && [self isFinished] && !self.error) {
         NSError *error = nil;
-        self.responseObject = [self.responseSerializer responseObjectForResponse:self.response data:self.responseData error:&error];
+        // self.responseObject = [self.responseSerializer responseObjectForResponse:self.response data:self.responseData error:&error];
+        // if we need to support a response format then use this mechanism ^
+        self.responseObject = self.responseString;
         if (error) {
             self.responseSerializationError = error;
         }
@@ -161,6 +170,23 @@ static inline BOOL AFStateTransitionIsValid(RBKSocketOperationState fromState, R
     [self.lock unlock];
     
     return _responseObject;
+}
+
+- (void)setState:(RBKSocketOperationState)state {
+    if (!RBKSocketStateTransitionIsValid(self.state, state, [self isCancelled])) {
+        return;
+    }
+    
+    [self.lock lock];
+    NSString *oldStateKey = RBKSocketKeyPathFromOperationState(self.state);
+    NSString *newStateKey = RBKSocketKeyPathFromOperationState(state);
+    
+    [self willChangeValueForKey:newStateKey];
+    [self willChangeValueForKey:oldStateKey];
+    _state = state;
+    [self didChangeValueForKey:oldStateKey];
+    [self didChangeValueForKey:newStateKey];
+    [self.lock unlock];
 }
 
 
@@ -242,18 +268,12 @@ static inline BOOL AFStateTransitionIsValid(RBKSocketOperationState fromState, R
 - (void)operationDidStart {
     [self.lock lock];
     if (! [self isCancelled]) {
-        // self.connection = [[NSURLConnection alloc] initWithRequest:self.request delegate:self startImmediately:NO];
         
-//        NSRunLoop *runLoop = [NSRunLoop currentRunLoop];
-//        for (NSString *runLoopMode in self.runLoopModes) {
-//            // [self.connection scheduleInRunLoop:runLoop forMode:runLoopMode];
-//            // [self.outputStream scheduleInRunLoop:runLoop forMode:runLoopMode];
-//            NSLog(@"...");
-//        }
-        
-        // [self.connection start];
         NSLog(@"start");
-        // this is probably where we should start our socket message
+        
+        self.socket.messageDelegate = self;
+        [self.socket sendMessage:self.message];
+        
     }
     [self.lock unlock];
     
@@ -304,5 +324,30 @@ static inline BOOL AFStateTransitionIsValid(RBKSocketOperationState fromState, R
     }
 }
 
+#pragma mark - RBKSocketMessageDelegate
+
+// message will either be an NSString if the server is using text
+// or NSData if the server is using binary.
+- (void)webSocket:(RoboSocket *)webSocket didReceiveMessage:(id)message {
+    NSLog(@"received Message");
+    self.responseString = message; // if this message is a string, if its data use self.responseData
+    
+    [self finish];
+    
+    self.socket.messageDelegate = nil;
+    self.socket = nil;
+
+}
+
+- (void)webSocket:(RoboSocket *)webSocket didFailWithError:(NSError *)error {
+    NSLog(@"failed");
+    
+    self.error = error;
+    
+    [self finish];
+    
+    self.socket.messageDelegate = nil;
+    self.socket = nil;
+}
 
 @end
