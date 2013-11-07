@@ -41,11 +41,6 @@ NSString * const hostURL = @"ws://localhost";
     // get the port that we're listening on and provide it to the client socket
     NSString *hostWithPort = [NSString stringWithFormat:@"%@:%d", hostURL, port];
     
-//    while(!self.isFinished) {
-//        [[NSRunLoop currentRunLoop] runMode:NSRunLoopCommonModes beforeDate:[NSDate distantFuture]];
-//    }
-
-    NSLog(@"Continuing");
     self.socketManager = [[RBKSocketManager alloc] initWithSocketURL:[NSURL URLWithString:hostWithPort]];
 }
 
