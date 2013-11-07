@@ -15,7 +15,7 @@
 //
 
 
-#import "SRStubSocket.h"
+#import "SRServerSocket.h"
 
 //#if TARGET_OS_IPHONE
 //#define HAS_ICU
@@ -228,7 +228,7 @@
 //@end
 
 
-@implementation SRStubSocket {
+@implementation SRServerSocket {
 //    NSInteger _webSocketVersion;
 //    
 //    NSOperationQueue *_delegateOperationQueue;
@@ -301,7 +301,7 @@
 
 - (id)initWithURLRequest:(NSURLRequest *)request protocols:(NSArray *)protocols;
 {
-    self = [super initWithURLRequest:request protocols:protocols socketType:SRSocketTypeStub];
+    self = [super initWithURLRequest:request protocols:protocols socketType:SRSocketTypeServer];
     if (self) {
         
     }
@@ -448,9 +448,9 @@
 //}
 //
 
-- (NSUInteger)stubSocketPort;
+- (NSUInteger)serverSocketPort;
 {
-    return [super stubSocketPort];
+    return [super serverSocketPort];
 }
 
 //// Calls block on delegate queue

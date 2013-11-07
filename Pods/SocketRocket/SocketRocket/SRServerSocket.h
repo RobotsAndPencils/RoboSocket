@@ -26,7 +26,7 @@
 //    SR_CLOSED       = 3,
 //} SRReadyState;
 
-@class SRStubSocket;
+@class SRServerSocket;
 
 extern NSString *const SRStubSocketErrorDomain;
 
@@ -36,16 +36,16 @@ extern NSString *const SRStubSocketErrorDomain;
 
 #pragma mark - SRStubSocket
 
-@interface SRStubSocket : SRBaseSocket
+@interface SRServerSocket : SRBaseSocket
 
-@property (nonatomic, assign) id <SRWebSocketDelegate> delegate;
+// @property (nonatomic, assign) id <SRWebSocketDelegate> delegate;
 
-@property (nonatomic, readonly) SRReadyState readyState;
-@property (nonatomic, readonly, retain) NSURL *url;
+// @property (nonatomic, readonly) SRReadyState readyState;
+// @property (nonatomic, readonly, retain) NSURL *url;
 
 // This returns the negotiated protocol.
 // It will be nil until after the handshake completes.
-@property (nonatomic, readonly, copy) NSString *protocol;
+// @property (nonatomic, readonly, copy) NSString *protocol;
 
 // Protocols should be an array of strings that turn into Sec-WebSocket-Protocol.
 - (id)initWithURLRequest:(NSURLRequest *)request protocols:(NSArray *)protocols;
@@ -75,7 +75,7 @@ extern NSString *const SRStubSocketErrorDomain;
 - (void)send:(id)data;
 
 // If this is a stub socket then the socket will be listening on a port
-- (NSUInteger)stubSocketPort;
+- (NSUInteger)serverSocketPort;
 
 @end
 

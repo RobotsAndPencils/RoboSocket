@@ -27,8 +27,8 @@ typedef enum {
 } SRReadyState;
 
 typedef enum {
-    SRSocketTypeWeb = 0, // normal use case as a client
-    SRSocketTypeStub, // used to fake server responses
+    SRSocketTypeClient = 0, // normal use case as a client
+    SRSocketTypeServer, // used to fake server responses
 } SRSocketType;
 
 @class SRWebSocket;
@@ -79,8 +79,8 @@ extern NSString *const SRWebSocketErrorDomain;
 // Send a UTF8 String or Data.
 - (void)send:(id)data;
 
-// If this is a stub socket then the socket will be listening on a port
-- (NSUInteger)stubSocketPort;
+// If this is a server socket then the socket will be listening on a port
+- (NSUInteger)serverSocketPort;
 
 @end
 
@@ -120,7 +120,7 @@ extern NSString *const SRWebSocketErrorDomain;
 
 @interface NSRunLoop (SRBaseSocket)
 
-+ (NSRunLoop *)SR_networkStubRunLoop;
-+ (NSRunLoop *)SR_networkRunLoop;
++ (NSRunLoop *)SR_networkServerRunLoop;
++ (NSRunLoop *)SR_networkClientRunLoop;
 
 @end

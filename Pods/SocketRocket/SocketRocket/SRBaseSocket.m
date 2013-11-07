@@ -297,7 +297,7 @@ typedef void (^data_callback)(SRBaseSocket *webSocket,  NSData *data);
     SRIOConsumerPool *_consumerPool;
     
     SRSocketType _socketType;
-    NSUInteger _stubSocketPort;
+    NSUInteger _serverSocketPort;
 }
 
 @synthesize delegate = _delegate;
@@ -331,7 +331,7 @@ static __strong NSData *CRLFCRLF;
 }
 
 - (id)initWithURLRequest:(NSURLRequest *)request protocols:(NSArray *)protocols {
-    return [self initWithURLRequest:request protocols:protocols socketType:SRSocketTypeWeb];
+    return [self initWithURLRequest:request protocols:protocols socketType:SRSocketTypeClient];
 }
 
 
@@ -368,7 +368,7 @@ static __strong NSData *CRLFCRLF;
     static const char *queueLabelClient = "SRClientWorkQueue";
     static const char *queueLabelStub = "SRStubWorkQueue";
 
-    if (_socketType == SRSocketTypeStub) {
+    if (_socketType == SRSocketTypeServer) {
         _workQueue = dispatch_queue_create(queueLabelStub, DISPATCH_QUEUE_SERIAL);
     } else {
         _workQueue = dispatch_queue_create(queueLabelClient, DISPATCH_QUEUE_SERIAL);
@@ -392,7 +392,7 @@ static __strong NSData *CRLFCRLF;
     _scheduledRunloops = [[NSMutableSet alloc] init];
     
     
-    if (_socketType == SRSocketTypeStub) {
+    if (_socketType == SRSocketTypeServer) {
         [self _initializeServerStreams];
     } else {
         [self _initializeStreams];
@@ -450,9 +450,9 @@ static __strong NSData *CRLFCRLF;
     [self _connect];
 }
 
-- (NSUInteger)stubSocketPort;
+- (NSUInteger)serverSocketPort;
 {
-    return _stubSocketPort;
+    return _serverSocketPort;
 }
 
 // Calls block on delegate queue
@@ -717,7 +717,7 @@ static __strong NSData *CRLFCRLF;
 {
     SRFastLog(@"Connected");
     
-    if (_socketType == SRSocketTypeStub) {
+    if (_socketType == SRSocketTypeServer) {
         [self _readClientHTTPHeader];
     } else {
         [self _writeClientHTTPHeader];
@@ -851,7 +851,7 @@ static void AcceptCallback(CFSocketRef socket, CFSocketCallBackType type, CFData
     port = ntohs(((const struct sockaddr_in *)[addr bytes])->sin_port);
 
     NSLog(@"Have listening port : %d", port);
-    _stubSocketPort = port;
+    _serverSocketPort = port;
 
     
     // Set up the IPv6 listening socket.
@@ -880,11 +880,11 @@ static void AcceptCallback(CFSocketRef socket, CFSocketCallBackType type, CFData
     // Set up the run loop sources for the sockets.
     
     CFRunLoopSourceRef source4 = CFSocketCreateRunLoopSource(kCFAllocatorDefault, _ipv4cfsock, 0);
-    CFRunLoopAddSource([[NSRunLoop SR_networkStubRunLoop] getCFRunLoop], source4, kCFRunLoopCommonModes);
+    CFRunLoopAddSource([[NSRunLoop SR_networkServerRunLoop] getCFRunLoop], source4, kCFRunLoopCommonModes);
     CFRelease(source4);
     
     CFRunLoopSourceRef source6 = CFSocketCreateRunLoopSource(kCFAllocatorDefault, _ipv6cfsock, 0);
-    CFRunLoopAddSource([[NSRunLoop SR_networkStubRunLoop] getCFRunLoop], source6, kCFRunLoopCommonModes);
+    CFRunLoopAddSource([[NSRunLoop SR_networkServerRunLoop] getCFRunLoop], source6, kCFRunLoopCommonModes);
     CFRelease(source6);
 }
 
@@ -937,10 +937,10 @@ static void AcceptCallback(CFSocketRef socket, CFSocketCallBackType type, CFData
 {
     if (!_scheduledRunloops.count) {
         
-        if (_socketType == SRSocketTypeStub) {
-            [self scheduleInRunLoop:[NSRunLoop SR_networkStubRunLoop] forMode:NSDefaultRunLoopMode];
+        if (_socketType == SRSocketTypeServer) {
+            [self scheduleInRunLoop:[NSRunLoop SR_networkServerRunLoop] forMode:NSDefaultRunLoopMode];
         } else {
-            [self scheduleInRunLoop:[NSRunLoop SR_networkRunLoop] forMode:NSDefaultRunLoopMode];
+            [self scheduleInRunLoop:[NSRunLoop SR_networkClientRunLoop] forMode:NSDefaultRunLoopMode];
         }
     }
     
@@ -1348,9 +1348,9 @@ static const uint8_t SRPayloadLenMask   = 0x7F;
         
         // The server MUST close the connection upon receiving a frame that is not masked.
         // A client MUST close a connection if it detects a masked frame.
-        if (header.masked && _socketType == SRSocketTypeWeb) {
+        if (header.masked && _socketType == SRSocketTypeClient) {
             [self _closeWithProtocolError:@"Client must receive unmasked data"];
-        } else if (!header.masked && _socketType == SRSocketTypeStub) {
+        } else if (!header.masked && _socketType == SRSocketTypeServer) {
             [self _closeWithProtocolError:@"Server must receive masked data"];
         }
         
@@ -1659,9 +1659,9 @@ static const size_t SRFrameHeaderOverhead = 32;
     frame_buffer[0] = SRFinMask | opcode;
     
     BOOL useMask = YES; // default to Client
-    if (_socketType == SRSocketTypeWeb) { // a client MUST mask all frames that it sends to the server
+    if (_socketType == SRSocketTypeClient) { // a client MUST mask all frames that it sends to the server
         useMask = YES;
-    } else if (_socketType == SRSocketTypeStub) { // A server MUST NOT mask any frames that it sends to the client.
+    } else if (_socketType == SRSocketTypeServer) { // A server MUST NOT mask any frames that it sends to the client.
         useMask = NO;
     }
     
@@ -1778,7 +1778,7 @@ static const size_t SRFrameHeaderOverhead = 32;
             case NSStreamEventErrorOccurred: {
                 SRFastLog(@"NSStreamEventErrorOccurred %@ %@", aStream, [[aStream streamError] copy]);
                 
-                if (_socketType == SRSocketTypeStub) {
+                if (_socketType == SRSocketTypeServer) {
                     NSLog(@"Watch this?");
                 }
 
@@ -1794,7 +1794,7 @@ static const size_t SRFrameHeaderOverhead = 32;
                 [self _pumpScanner];
                 SRFastLog(@"NSStreamEventEndEncountered %@", aStream);
                 
-                if (_socketType == SRSocketTypeStub) {
+                if (_socketType == SRSocketTypeServer) {
                     NSLog(@"Watch this?");
                 }
 
@@ -2066,7 +2066,7 @@ static NSRunLoop *networkStubRunLoop = nil;
 
 @implementation NSRunLoop (SRBaseSocket)
 
-+ (NSRunLoop *)SR_networkRunLoop {
++ (NSRunLoop *)SR_networkClientRunLoop {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         networkThread = [[_SRRunLoopThread alloc] init];
@@ -2078,7 +2078,7 @@ static NSRunLoop *networkStubRunLoop = nil;
     return networkRunLoop;
 }
 
-+ (NSRunLoop *)SR_networkStubRunLoop {
++ (NSRunLoop *)SR_networkServerRunLoop {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         networkStubThread = [[_SRRunLoopThread alloc] init];

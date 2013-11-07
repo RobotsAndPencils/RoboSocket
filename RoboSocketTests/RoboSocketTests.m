@@ -12,7 +12,7 @@
 #import <Expecta/Expecta.h>
 
 #import "RBKSocketManager.h"
-#import <SocketRocket/SRStubSocket.h>
+#import <SocketRocket/SRServerSocket.h>
 #import <SocketRocket/SRWebSocket.h>
 
 // NSString * const hostURL = @"ws://echo.websocket.org";
@@ -21,7 +21,7 @@ NSString * const hostURL = @"ws://localhost";
 @interface RoboSocketTests : XCTestCase <SRWebSocketDelegate>
 
 @property (strong, nonatomic) RBKSocketManager *socketManager;
-@property (strong, nonatomic) SRStubSocket *stubSocket;
+@property (strong, nonatomic) SRServerSocket *stubSocket;
 
 @property (assign, nonatomic, getter = isFinished) BOOL finished;
 
@@ -35,10 +35,10 @@ NSString * const hostURL = @"ws://localhost";
     [Expecta setAsynchronousTestTimeout:300.0];
 
     self.finished = NO;
-    self.stubSocket = [[SRStubSocket alloc] initWithURL:[NSURL URLWithString:hostURL]];
+    self.stubSocket = [[SRServerSocket alloc] initWithURL:[NSURL URLWithString:hostURL]];
     self.stubSocket.delegate = self;
 
-    NSUInteger port = [self.stubSocket stubSocketPort];
+    NSUInteger port = [self.stubSocket serverSocketPort];
     // get the port that we're listening on and provide it to the client socket
     NSString *hostWithPort = [NSString stringWithFormat:@"%@:%d", hostURL, port];
     
