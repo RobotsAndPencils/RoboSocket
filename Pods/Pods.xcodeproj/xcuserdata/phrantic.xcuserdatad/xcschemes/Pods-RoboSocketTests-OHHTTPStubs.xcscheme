@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "8029794761A14745AC3AE905"
+               BlueprintIdentifier = "5828B610F9CE4056AB94B600"
                BuildableName = "libPods-RoboSocketTests-OHHTTPStubs.a"
                BlueprintName = "Pods-RoboSocketTests-OHHTTPStubs"
                ReferencedContainer = "container:Pods.xcodeproj">

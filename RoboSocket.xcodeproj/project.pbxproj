@@ -34,7 +34,6 @@
 		4F88E57E180F960200663E45 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F88E57B180F93E200663E45 /* SystemConfiguration.framework */; };
 		4F8ED12C182447F800055715 /* libicucore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F8ED12B182447F800055715 /* libicucore.dylib */; };
 		4F8ED12F18245D3900055715 /* RBKSocketOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F8ED12E18245D3900055715 /* RBKSocketOperation.m */; };
-		4F8ED13218245D5500055715 /* RBKSocketListener.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F8ED13118245D5500055715 /* RBKSocketListener.m */; };
 		4F8ED13B182467E100055715 /* RBKSocketManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F8ED13A182467E100055715 /* RBKSocketManager.m */; };
 		4F8ED140182477A300055715 /* RBKSocketRequestSerialization.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F8ED13D182477A300055715 /* RBKSocketRequestSerialization.m */; };
 		4F8ED141182477A300055715 /* RBKSocketResponseSerialization.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F8ED13F182477A300055715 /* RBKSocketResponseSerialization.m */; };
@@ -109,8 +108,6 @@
 		4F8ED12B182447F800055715 /* libicucore.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libicucore.dylib; path = usr/lib/libicucore.dylib; sourceTree = SDKROOT; };
 		4F8ED12D18245D3900055715 /* RBKSocketOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RBKSocketOperation.h; sourceTree = "<group>"; };
 		4F8ED12E18245D3900055715 /* RBKSocketOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RBKSocketOperation.m; sourceTree = "<group>"; };
-		4F8ED13018245D5500055715 /* RBKSocketListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RBKSocketListener.h; sourceTree = "<group>"; };
-		4F8ED13118245D5500055715 /* RBKSocketListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RBKSocketListener.m; sourceTree = "<group>"; };
 		4F8ED139182467E100055715 /* RBKSocketManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RBKSocketManager.h; sourceTree = "<group>"; };
 		4F8ED13A182467E100055715 /* RBKSocketManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RBKSocketManager.m; sourceTree = "<group>"; };
 		4F8ED13C182477A300055715 /* RBKSocketRequestSerialization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RBKSocketRequestSerialization.h; sourceTree = "<group>"; };
@@ -268,8 +265,6 @@
 				4F50DB2D180EEFE80035BE77 /* RoboSocket.m */,
 				4F8ED12D18245D3900055715 /* RBKSocketOperation.h */,
 				4F8ED12E18245D3900055715 /* RBKSocketOperation.m */,
-				4F8ED13018245D5500055715 /* RBKSocketListener.h */,
-				4F8ED13118245D5500055715 /* RBKSocketListener.m */,
 				4F8ED139182467E100055715 /* RBKSocketManager.h */,
 				4F8ED13A182467E100055715 /* RBKSocketManager.m */,
 				4F8ED13C182477A300055715 /* RBKSocketRequestSerialization.h */,
@@ -539,7 +534,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				4F8ED13B182467E100055715 /* RBKSocketManager.m in Sources */,
-				4F8ED13218245D5500055715 /* RBKSocketListener.m in Sources */,
 				4F8ED12F18245D3900055715 /* RBKSocketOperation.m in Sources */,
 				4F50DB2E180EEFE80035BE77 /* RoboSocket.m in Sources */,
 				4F8ED141182477A300055715 /* RBKSocketResponseSerialization.m in Sources */,

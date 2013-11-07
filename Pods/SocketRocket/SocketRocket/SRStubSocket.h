@@ -26,17 +26,17 @@
 //    SR_CLOSED       = 3,
 //} SRReadyState;
 
-@class SRWebSocket;
+@class SRStubSocket;
 
-extern NSString *const SRWebSocketErrorDomain;
+extern NSString *const SRStubSocketErrorDomain;
 
-#pragma mark - SRWebSocketDelegate
+#pragma mark - SRStubSocketDelegate
 
-@protocol SRWebSocketDelegate;
+@protocol SRStubSocketDelegate;
 
-#pragma mark - SRWebSocket
+#pragma mark - SRStubSocket
 
-@interface SRWebSocket : SRBaseSocket
+@interface SRStubSocket : SRBaseSocket
 
 @property (nonatomic, assign) id <SRWebSocketDelegate> delegate;
 
@@ -64,8 +64,9 @@ extern NSString *const SRWebSocketErrorDomain;
 - (void)scheduleInRunLoop:(NSRunLoop *)aRunLoop forMode:(NSString *)mode;
 - (void)unscheduleFromRunLoop:(NSRunLoop *)aRunLoop forMode:(NSString *)mode;
 
-// SRWebSockets are intended for one-time-use only.  Open should be called once and only once.
-- (void)open;
+// SRStubSockets are intended for one-time-use only.  Open should be called once and only once.
+//- (void)open;
+// SRStubSocket is listening for the connection
 
 - (void)close;
 - (void)closeWithCode:(NSInteger)code reason:(NSString *)reason;
@@ -73,24 +74,27 @@ extern NSString *const SRWebSocketErrorDomain;
 // Send a UTF8 String or Data.
 - (void)send:(id)data;
 
+// If this is a stub socket then the socket will be listening on a port
+- (NSUInteger)stubSocketPort;
+
 @end
 
-//#pragma mark - SRWebSocketDelegate
+//#pragma mark - SRStubSocketDelegate
 //
-//@protocol SRWebSocketDelegate <NSObject>
+//@protocol SRStubSocketDelegate <NSObject>
 //
 //// message will either be an NSString if the server is using text
 //// or NSData if the server is using binary.
-//- (void)webSocket:(SRWebSocket *)webSocket didReceiveMessage:(id)message;
+//- (void)webSocket:(SRStubSocket *)webSocket didReceiveMessage:(id)message;
 //
 //@optional
 //
-//- (void)webSocketDidOpen:(SRWebSocket *)webSocket;
-//- (void)webSocket:(SRWebSocket *)webSocket didFailWithError:(NSError *)error;
-//- (void)webSocket:(SRWebSocket *)webSocket didCloseWithCode:(NSInteger)code reason:(NSString *)reason wasClean:(BOOL)wasClean;
+//- (void)webSocketDidOpen:(SRStubSocket *)webSocket;
+//- (void)webSocket:(SRStubSocket *)webSocket didFailWithError:(NSError *)error;
+//- (void)webSocket:(SRStubSocket *)webSocket didCloseWithCode:(NSInteger)code reason:(NSString *)reason wasClean:(BOOL)wasClean;
 //
 //@end
-
+//
 //#pragma mark - NSURLRequest (CertificateAdditions)
 //
 //@interface NSURLRequest (CertificateAdditions)
@@ -107,9 +111,9 @@ extern NSString *const SRWebSocketErrorDomain;
 //
 //@end
 //
-//#pragma mark - NSRunLoop (SRWebSocket)
+//#pragma mark - NSRunLoop (SRStubSocket)
 //
-//@interface NSRunLoop (SRWebSocket)
+//@interface NSRunLoop (SRStubSocket)
 //
 //+ (NSRunLoop *)SR_networkRunLoop;
 //

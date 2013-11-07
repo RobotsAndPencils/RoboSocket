@@ -15,7 +15,7 @@
 //
 
 
-#import "SRWebSocket.h"
+#import "SRStubSocket.h"
 
 //#if TARGET_OS_IPHONE
 //#define HAS_ICU
@@ -85,27 +85,27 @@
 //    uint64_t payload_length;
 //} frame_header;
 //
-//static NSString *const SRWebSocketAppendToSecKeyString = @"258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+//static NSString *const SRStubSocketAppendToSecKeyString = @"258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 //
 //static inline int32_t validate_dispatch_data_partial_string(NSData *data);
 //static inline dispatch_queue_t log_queue();
 //static inline void SRFastLog(NSString *format, ...);
 //
-//@interface NSData (SRWebSocket)
+//@interface NSData (SRStubSocket)
 //
 //- (NSString *)stringBySHA1ThenBase64Encoding;
 //
 //@end
 //
 //
-//@interface NSString (SRWebSocket)
+//@interface NSString (SRStubSocket)
 //
 //- (NSString *)stringBySHA1ThenBase64Encoding;
 //
 //@end
 //
 //
-//@interface NSURL (SRWebSocket)
+//@interface NSURL (SRStubSocket)
 //
 //// The origin isn't really applicable for a native application.
 //// So instead, just map ws -> http and wss -> https.
@@ -139,7 +139,7 @@
 //    }
 //}
 //
-//@implementation NSData (SRWebSocket)
+//@implementation NSData (SRStubSocket)
 //
 //- (NSString *)stringBySHA1ThenBase64Encoding;
 //{
@@ -149,7 +149,7 @@
 //@end
 //
 //
-//@implementation NSString (SRWebSocket)
+//@implementation NSString (SRStubSocket)
 //
 //- (NSString *)stringBySHA1ThenBase64Encoding;
 //{
@@ -158,13 +158,13 @@
 //
 //@end
 //
-//NSString *const SRWebSocketErrorDomain = @"SRWebSocketErrorDomain";
+//NSString *const SRStubSocketErrorDomain = @"SRStubSocketErrorDomain";
 //
 //// Returns number of bytes consumed. Returning 0 means you didn't match.
 //// Sends bytes to callback handler;
 //typedef size_t (^stream_scanner)(NSData *collected_data);
 //
-//typedef void (^data_callback)(SRWebSocket *webSocket,  NSData *data);
+//typedef void (^data_callback)(SRStubSocket *webSocket,  NSData *data);
 //
 //@interface SRIOConsumer : NSObject {
 //    stream_scanner _scanner;
@@ -191,8 +191,8 @@
 //
 //@end
 
-@interface SRWebSocket ()  <NSStreamDelegate>
-
+//@interface SRStubSocket ()  <NSStreamDelegate>
+//
 //- (void)_writeData:(NSData *)data;
 //- (void)_closeWithProtocolError:(NSString *)message;
 //- (void)_failWithError:(NSError *)error;
@@ -224,11 +224,11 @@
 //
 //@property (nonatomic) NSOperationQueue *delegateOperationQueue;
 //@property (nonatomic) dispatch_queue_t delegateDispatchQueue;
+//
+//@end
 
-@end
 
-
-@implementation SRWebSocket {
+@implementation SRStubSocket {
 //    NSInteger _webSocketVersion;
 //    
 //    NSOperationQueue *_delegateOperationQueue;
@@ -280,7 +280,7 @@
 //    NSMutableSet *_scheduledRunloops;
 //    
 //    // We use this to retain ourselves.
-//    __strong SRWebSocket *_selfRetain;
+//    __strong SRStubSocket *_selfRetain;
 //    
 //    NSArray *_requestedProtocols;
 //    SRIOConsumerPool *_consumerPool;
@@ -290,23 +290,23 @@
 //@synthesize url = _url;
 //@synthesize readyState = _readyState;
 //@synthesize protocol = _protocol;
-//
+
 //static __strong NSData *CRLFCRLF;
 //
 //+ (void)initialize;
 //{
 //    CRLFCRLF = [[NSData alloc] initWithBytes:"\r\n\r\n" length:4];
 //}
+//
 
 - (id)initWithURLRequest:(NSURLRequest *)request protocols:(NSArray *)protocols;
 {
-    self = [super initWithURLRequest:request protocols:protocols];
+    self = [super initWithURLRequest:request protocols:protocols socketType:SRSocketTypeStub];
     if (self) {
         
     }
     return self;
 }
-
 
 //- (id)initWithURLRequest:(NSURLRequest *)request protocols:(NSArray *)protocols;
 //{
@@ -336,7 +336,7 @@
 
 - (id)initWithURL:(NSURL *)url protocols:(NSArray *)protocols;
 {
-    NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:url];    
+    NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:url];
     return [self initWithURLRequest:request protocols:protocols];
 }
 
@@ -353,8 +353,6 @@
 - (void)unscheduleFromRunLoop:(NSRunLoop *)aRunLoop forMode:(NSString *)mode {
     [super unscheduleFromRunLoop:aRunLoop forMode:mode];
 }
-
-
 
 //- (void)_SR_commonInit;
 //{
@@ -434,21 +432,27 @@
 //#endif
 //
 
-- (void)open;
-{
-    [super open];
-}
+//- (void)open;
+//{
+//    [super open];
+//}
 
 //- (void)open;
 //{
 //    assert(_url);
-//    NSAssert(_readyState == SR_CONNECTING, @"Cannot call -(void)open on SRWebSocket more than once");
+//    NSAssert(_readyState == SR_CONNECTING, @"Cannot call -(void)open on SRStubSocket more than once");
 //
 //    _selfRetain = self;
 //    
 //    [self _connect];
 //}
 //
+
+- (NSUInteger)stubSocketPort;
+{
+    return [super stubSocketPort];
+}
+
 //// Calls block on delegate queue
 //- (void)_performDelegateBlock:(dispatch_block_t)block;
 //{
@@ -481,7 +485,7 @@
 //        return NO;
 //    }
 //    
-//    NSString *concattedString = [_secKey stringByAppendingString:SRWebSocketAppendToSecKeyString];
+//    NSString *concattedString = [_secKey stringByAppendingString:SRStubSocketAppendToSecKeyString];
 //    NSString *expectedAccept = [concattedString stringBySHA1ThenBase64Encoding];
 //    
 //    return [acceptHeader isEqualToString:expectedAccept];
@@ -499,7 +503,7 @@
 //    }
 //    
 //    if(![self _checkHandshake:_receivedHTTPHeaders]) {
-//        [self _failWithError:[NSError errorWithDomain:SRWebSocketErrorDomain code:2133 userInfo:[NSDictionary dictionaryWithObject:[NSString stringWithFormat:@"Invalid Sec-WebSocket-Accept response"] forKey:NSLocalizedDescriptionKey]]];
+//        [self _failWithError:[NSError errorWithDomain:SRStubSocketErrorDomain code:2133 userInfo:[NSDictionary dictionaryWithObject:[NSString stringWithFormat:@"Invalid Sec-WebSocket-Accept response"] forKey:NSLocalizedDescriptionKey]]];
 //        return;
 //    }
 //    
@@ -507,7 +511,7 @@
 //    if (negotiatedProtocol) {
 //        // Make sure we requested the protocol
 //        if ([_requestedProtocols indexOfObject:negotiatedProtocol] == NSNotFound) {
-//            [self _failWithError:[NSError errorWithDomain:SRWebSocketErrorDomain code:2133 userInfo:[NSDictionary dictionaryWithObject:[NSString stringWithFormat:@"Server specified Sec-WebSocket-Protocol that wasn't requested"] forKey:NSLocalizedDescriptionKey]]];
+//            [self _failWithError:[NSError errorWithDomain:SRStubSocketErrorDomain code:2133 userInfo:[NSDictionary dictionaryWithObject:[NSString stringWithFormat:@"Server specified Sec-WebSocket-Protocol that wasn't requested"] forKey:NSLocalizedDescriptionKey]]];
 //            return;
 //        }
 //        
@@ -534,7 +538,7 @@
 //        _receivedHTTPHeaders = CFHTTPMessageCreateEmpty(NULL, NO);
 //    }
 //                        
-//    [self _readUntilHeaderCompleteWithCallback:^(SRWebSocket *self,  NSData *data) {
+//    [self _readUntilHeaderCompleteWithCallback:^(SRStubSocket *self,  NSData *data) {
 //        CFHTTPMessageAppendBytes(_receivedHTTPHeaders, (const UInt8 *)data.bytes, data.length);
 //        
 //        if (CFHTTPMessageIsHeaderComplete(_receivedHTTPHeaders)) {
@@ -652,7 +656,6 @@
 //    
 //    [_scheduledRunloops removeObject:@[aRunLoop, mode]];
 //}
-//
 
 - (void)close;
 {
@@ -969,7 +972,7 @@
 //            }
 //        }
 //    } else {
-//        [self _addConsumerWithDataLength:frame_header.payload_length callback:^(SRWebSocket *self, NSData *newData) {
+//        [self _addConsumerWithDataLength:frame_header.payload_length callback:^(SRStubSocket *self, NSData *newData) {
 //            if (isControlFrame) {
 //                [self _handleFrameWithData:newData opCode:frame_header.opcode];
 //            } else {
@@ -1018,7 +1021,7 @@
 //{
 //    assert((_currentFrameCount == 0 && _currentFrameOpcode == 0) || (_currentFrameCount > 0 && _currentFrameOpcode > 0));
 //
-//    [self _addConsumerWithDataLength:2 callback:^(SRWebSocket *self, NSData *data) {
+//    [self _addConsumerWithDataLength:2 callback:^(SRStubSocket *self, NSData *data) {
 //        __block frame_header header = {0};
 //        
 //        const uint8_t *headerBuffer = data.bytes;
@@ -1068,7 +1071,7 @@
 //        if (extra_bytes_needed == 0) {
 //            [self _handleFrameHeader:header curData:self->_currentFrameData];
 //        } else {
-//            [self _addConsumerWithDataLength:extra_bytes_needed callback:^(SRWebSocket *self, NSData *data) {
+//            [self _addConsumerWithDataLength:extra_bytes_needed callback:^(SRStubSocket *self, NSData *data) {
 //                size_t mapped_size = data.length;
 //                const void *mapped_buffer = data.bytes;
 //                size_t offset = 0;
@@ -1631,7 +1634,7 @@
 //
 //@end
 //
-//@implementation NSURL (SRWebSocket)
+//@implementation NSURL (SRStubSocket)
 //
 //- (NSString *)SR_origin;
 //{
@@ -1743,7 +1746,7 @@
 //static _SRRunLoopThread *networkThread = nil;
 //static NSRunLoop *networkRunLoop = nil;
 //
-//@implementation NSRunLoop (SRWebSocket)
+//@implementation NSRunLoop (SRStubSocket)
 //
 //+ (NSRunLoop *)SR_networkRunLoop {
 //    static dispatch_once_t onceToken;
