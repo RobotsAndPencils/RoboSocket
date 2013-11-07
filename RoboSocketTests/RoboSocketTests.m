@@ -13,6 +13,7 @@
 
 #import "RBKSocketManager.h"
 #import <SocketRocket/SRStubSocket.h>
+#import <SocketRocket/SRWebSocket.h>
 
 // NSString * const hostURL = @"ws://echo.websocket.org";
 NSString * const hostURL = @"ws://localhost";
@@ -70,7 +71,10 @@ NSString * const hostURL = @"ws://localhost";
 #pragma mark - SRWebSocketDelegate
 
 - (void)webSocket:(SRWebSocket *)webSocket didReceiveMessage:(id)message; {
+    NSLog(@"Received message %@", message);
+    // now echo it back?
     
+    [webSocket send:message];
 }
 
 - (void)webSocketDidOpen:(SRWebSocket *)webSocket; {

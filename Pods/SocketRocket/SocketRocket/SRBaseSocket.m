@@ -582,6 +582,9 @@ static __strong NSData *CRLFCRLF;
     }
     
     // TODO: should be checking that the status code from the server is 101 per rfc6455
+    // TODO: should be checking that the value for the header key |Upgrade| is "websocket"
+    // TODO: should be checking that the value for the header key |Connection| is "upgrade"
+    // NOTE: |Sec-WebSocket-Extensions| are not supported
     
     if(![self _checkHandshake:_receivedHTTPHeaders]) {
         [self _failWithError:[NSError errorWithDomain:SRWebSocketErrorDomain code:2133 userInfo:[NSDictionary dictionaryWithObject:[NSString stringWithFormat:@"Invalid Sec-WebSocket-Accept response"] forKey:NSLocalizedDescriptionKey]]];
@@ -623,8 +626,16 @@ static __strong NSData *CRLFCRLF;
         SRFastLog(@"Request failed with response code %d", responseCode);
         [self _failWithError:[NSError errorWithDomain:@"org.lolrus.SocketRocket" code:2132 userInfo:[NSDictionary dictionaryWithObject:[NSString stringWithFormat:@"received bad response code from server %ld", (long)responseCode] forKey:NSLocalizedDescriptionKey]]];
         return;
-        
     }
+    
+    // TODO: fail if not an HTTP/1.1 or higher GET request, including a "Request-URI"
+    // TODO: fail if not a |Host| header field containing the server's authority
+    // TODO: fail if not an |Upgrade| header field containing the value "websocket" (treat case insensitive)
+    // TODO: fail if not a |Connection| header field that includes the token "Upgrade"
+    // TODO: fail if not a |Sec-WebSocket-Key| header field with a base64-encoded value that, when decoded, is 16 bytes in length.
+    // TODO: fail if not a |Sec-WebSocket-Version| header field, with a value of 13
+    
+    // TODO: check the |Sec-WebSocket-Version|
     
     NSLog(@"Finished reading headers %@", CFBridgingRelease(CFHTTPMessageCopyAllHeaderFields(_receivedHTTPHeaders)));
 
@@ -634,6 +645,7 @@ static __strong NSData *CRLFCRLF;
         return;
     }
 
+    // Sec-WebSocket-Protocol is optional
     NSString *requestedProtocol = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(_receivedHTTPHeaders, CFSTR("Sec-WebSocket-Protocol")));
     if (requestedProtocol) {
         // Make sure we support the protocol?
@@ -644,9 +656,11 @@ static __strong NSData *CRLFCRLF;
 //            return;
 //        }
 
-        _protocol = [_requestedProtocols objectAtIndex:0]; // for now just pick the first protocol
+        _protocol = [_requestedProtocols objectAtIndex:0]; // for now just pick the first protocol as the spec indicates that they are ordered by preference
     }
 
+    // Sec-WebSocket-Extensions is optional and not supported
+    
     self.readyState = SR_OPEN;
 
     if (!_didFail) {
@@ -1327,17 +1341,20 @@ static const uint8_t SRPayloadLenMask   = 0x7F;
         
         header.fin = !!(SRFinMask & headerBuffer[0]);
         
-        
         header.masked = !!(SRMaskMask & headerBuffer[1]);
         header.payload_length = SRPayloadLenMask & headerBuffer[1];
         
         headerBuffer = NULL;
         
-        if (header.masked) {
+        // The server MUST close the connection upon receiving a frame that is not masked.
+        // A client MUST close a connection if it detects a masked frame.
+        if (header.masked && _socketType == SRSocketTypeWeb) {
             [self _closeWithProtocolError:@"Client must receive unmasked data"];
+        } else if (!header.masked && _socketType == SRSocketTypeStub) {
+            [self _closeWithProtocolError:@"Server must receive masked data"];
         }
         
-        size_t extra_bytes_needed = header.masked ? sizeof(_currentReadMaskKey) : 0;
+        size_t extra_bytes_needed = header.masked ? sizeof(_currentReadMaskKey) : 0; // if we're a client do we care about the masked value?
         
         if (header.payload_length == 126) {
             extra_bytes_needed += sizeof(uint16_t);
@@ -1641,7 +1658,13 @@ static const size_t SRFrameHeaderOverhead = 32;
     // set fin
     frame_buffer[0] = SRFinMask | opcode;
     
-    BOOL useMask = YES;
+    BOOL useMask = YES; // default to Client
+    if (_socketType == SRSocketTypeWeb) { // a client MUST mask all frames that it sends to the server
+        useMask = YES;
+    } else if (_socketType == SRSocketTypeStub) { // A server MUST NOT mask any frames that it sends to the client.
+        useMask = NO;
+    }
+    
 #ifdef NOMASK
     useMask = NO;
 #endif
