@@ -651,8 +651,8 @@ static __strong NSData *CRLFCRLF;
 
     if (!_didFail) {
         [self _writeServerHTTPHeader:clientHandshake];
+        [self _readFrameNew];
     }
-    
     [self _performDelegateBlock:^{
         if ([self.delegate respondsToSelector:@selector(webSocketDidOpen:)]) {
             [self.delegate webSocketDidOpen:self];
@@ -704,12 +704,8 @@ static __strong NSData *CRLFCRLF;
     SRFastLog(@"Connected");
     
     if (_socketType == SRSocketTypeStub) {
-        
         [self _readClientHTTPHeader];
-        [self.delegate webSocketDidOpen:self]; // probably don't need to do this
-
     } else {
-        
         [self _writeClientHTTPHeader];
         [self _readServerHTTPHeader];
     }
