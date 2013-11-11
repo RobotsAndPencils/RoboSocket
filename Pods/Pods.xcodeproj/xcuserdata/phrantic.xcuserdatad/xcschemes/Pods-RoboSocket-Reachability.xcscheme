@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "54226F40DEEB4F0982469B04"
+               BlueprintIdentifier = "E3F9100DB6244DD79A1961CA"
                BuildableName = "libPods-RoboSocket-Reachability.a"
                BlueprintName = "Pods-RoboSocket-Reachability"
                ReferencedContainer = "container:Pods.xcodeproj">

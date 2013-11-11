@@ -1,1 +1,0 @@
-../../SocketRocket/SocketRocket/SRStubSocket.h

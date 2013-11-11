@@ -18,6 +18,6 @@ SPEC CHECKSUMS:
   Expecta: dbc4a27fabb853bdd2e907e33f11ee43a9a47d0c
   OHHTTPStubs: 7be864a1c40c6a5007fe3e8679c109ca45590803
   Reachability: 2be6bc2fd2bd31d97f5db33e75e4b29c79e95883
-  SocketRocket: 9cbe08469513356cddc0afcab1ff160bd190296a
+  SocketRocket: dff9e805e5af61f7b8780e96ecbe6f7823559a21
 
 COCOAPODS: 0.27.1

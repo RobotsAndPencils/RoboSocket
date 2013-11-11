@@ -40,7 +40,6 @@
 
 #include <sys/socket.h>
 #include <netinet/in.h>
-//#include <unistd.h>
 
 #if OS_OBJECT_USE_OBJC_RETAIN_RELEASE
 #define sr_dispatch_retain(x)
@@ -334,7 +333,6 @@ static __strong NSData *CRLFCRLF;
     return [self initWithURLRequest:request protocols:protocols socketType:SRSocketTypeClient];
 }
 
-
 - (id)initWithURLRequest:(NSURLRequest *)request;
 {
     return [self initWithURLRequest:request protocols:nil];
@@ -390,7 +388,6 @@ static __strong NSData *CRLFCRLF;
     _consumerPool = [[SRIOConsumerPool alloc] init];
     
     _scheduledRunloops = [[NSMutableSet alloc] init];
-    
     
     if (_socketType == SRSocketTypeServer) {
         [self _initializeServerStreams];
@@ -493,83 +490,6 @@ static __strong NSData *CRLFCRLF;
     return [acceptHeader isEqualToString:expectedAccept];
 }
 
-- (NSString *)_generateClientAcceptHeader:(CFHTTPMessageRef)httpMessage;
-{
-    NSString *keyHeader = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(httpMessage, CFSTR("Sec-WebSocket-Key")));
-    
-    if (keyHeader == nil) {
-        return nil;
-    }
-    
-    _secKey = keyHeader; // get the random value from the header, and hash it with the websocket key
-    
-    NSString *concattedString = [_secKey stringByAppendingString:SRWebSocketAppendToSecKeyString];
-    NSString *acceptValue = [concattedString stringBySHA1ThenBase64Encoding];
-    
-    return acceptValue;
-}
-
-- (void)_writeClientHTTPHeader
-{
-    CFHTTPMessageRef request = CFHTTPMessageCreateRequest(NULL, CFSTR("GET"), (__bridge CFURLRef)_url, kCFHTTPVersion1_1);
-    
-    // Set host first so it defaults
-    CFHTTPMessageSetHeaderFieldValue(request, CFSTR("Host"), (__bridge CFStringRef)(_url.port ? [NSString stringWithFormat:@"%@:%@", _url.host, _url.port] : _url.host));
-    
-    NSMutableData *keyBytes = [[NSMutableData alloc] initWithLength:16];
-    SecRandomCopyBytes(kSecRandomDefault, keyBytes.length, keyBytes.mutableBytes);
-    _secKey = [keyBytes SR_stringByBase64Encoding];
-    assert([_secKey length] == 24);
-    
-    CFHTTPMessageSetHeaderFieldValue(request, CFSTR("Upgrade"), CFSTR("websocket"));
-    CFHTTPMessageSetHeaderFieldValue(request, CFSTR("Connection"), CFSTR("Upgrade"));
-    CFHTTPMessageSetHeaderFieldValue(request, CFSTR("Sec-WebSocket-Key"), (__bridge CFStringRef)_secKey);
-    CFHTTPMessageSetHeaderFieldValue(request, CFSTR("Sec-WebSocket-Version"), (__bridge CFStringRef)[NSString stringWithFormat:@"%ld", (long)_webSocketVersion]);
-    
-    CFHTTPMessageSetHeaderFieldValue(request, CFSTR("Origin"), (__bridge CFStringRef)_url.SR_origin);
-    
-    if (_requestedProtocols) {
-        CFHTTPMessageSetHeaderFieldValue(request, CFSTR("Sec-WebSocket-Protocol"), (__bridge CFStringRef)[_requestedProtocols componentsJoinedByString:@", "]);
-    }
-    
-    [_urlRequest.allHTTPHeaderFields enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
-        CFHTTPMessageSetHeaderFieldValue(request, (__bridge CFStringRef)key, (__bridge CFStringRef)obj);
-    }];
-    
-    NSData *message = CFBridgingRelease(CFHTTPMessageCopySerializedMessage(request));
-    
-    CFRelease(request);
-    
-    [self _writeData:message];
-}
-
-- (void)_writeServerHTTPHeader:(NSString *)acceptHeader
-{
-    
-    CFHTTPMessageRef response = CFHTTPMessageCreateResponse(NULL, 101, @"Switching Protocols", kCFHTTPVersion1_1);
-    
-    CFHTTPMessageSetHeaderFieldValue(response, CFSTR("Upgrade"), CFSTR("websocket"));
-    CFHTTPMessageSetHeaderFieldValue(response, CFSTR("Connection"), CFSTR("Upgrade"));
-    CFHTTPMessageSetHeaderFieldValue(response, CFSTR("Sec-WebSocket-Accept"), (__bridge CFStringRef)acceptHeader);
-    
-    if (_protocol) {
-        CFHTTPMessageSetHeaderFieldValue(response, CFSTR("Sec-WebSocket-Protocol"), (__bridge CFStringRef)_protocol);
-    }
-    
-    [_urlRequest.allHTTPHeaderFields enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
-        CFHTTPMessageSetHeaderFieldValue(response, (__bridge CFStringRef)key, (__bridge CFStringRef)obj);
-    }];
-    
-    NSData *message = CFBridgingRelease(CFHTTPMessageCopySerializedMessage(response));
-    
-    CFRelease(response);
-    
-    NSString *clientHeaderString = [[NSString alloc] initWithData:message encoding:NSUTF8StringEncoding];
-    
-    [self _writeData:message];
-}
-
-
 - (void)_ServerHTTPHeadersDidFinish;
 {
     NSInteger responseCode = CFHTTPMessageGetResponseStatusCode(_receivedHTTPHeaders);
@@ -610,18 +530,15 @@ static __strong NSData *CRLFCRLF;
 
     [self _performDelegateBlock:^{
         if ([self.delegate respondsToSelector:@selector(webSocketDidOpen:)]) {
-            [self.delegate webSocketDidOpen:self];
+            [self.delegate webSocketDidOpen:(id)self];
         };
     }];
 }
 
 - (void)_ClientHTTPHeadersDidFinish;
 {
-    
-    // check what we received and then send our header back
-    
     NSInteger responseCode = CFHTTPMessageGetResponseStatusCode(_receivedHTTPHeaders);
-
+    
     if (responseCode >= 400) {
         SRFastLog(@"Request failed with response code %d", responseCode);
         [self _failWithError:[NSError errorWithDomain:@"org.lolrus.SocketRocket" code:2132 userInfo:[NSDictionary dictionaryWithObject:[NSString stringWithFormat:@"received bad response code from server %ld", (long)responseCode] forKey:NSLocalizedDescriptionKey]]];
@@ -638,43 +555,116 @@ static __strong NSData *CRLFCRLF;
     // TODO: check the |Sec-WebSocket-Version|
     
     NSLog(@"Finished reading headers %@", CFBridgingRelease(CFHTTPMessageCopyAllHeaderFields(_receivedHTTPHeaders)));
-
+    
     NSString *clientHandshake = [self _generateClientAcceptHeader:_receivedHTTPHeaders];
     if(!clientHandshake) {
         [self _failWithError:[NSError errorWithDomain:SRWebSocketErrorDomain code:2133 userInfo:[NSDictionary dictionaryWithObject:[NSString stringWithFormat:@"Invalid Sec-WebSocket-Key response"] forKey:NSLocalizedDescriptionKey]]];
         return;
     }
-
+    
     // Sec-WebSocket-Protocol is optional
     NSString *requestedProtocol = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(_receivedHTTPHeaders, CFSTR("Sec-WebSocket-Protocol")));
     if (requestedProtocol) {
         // Make sure we support the protocol?
         _requestedProtocols = [[requestedProtocol componentsSeparatedByString:@", "] copy]; // this string should be a constant
         // how do we know what protocols we support?
-//        if ([_requestedProtocols indexOfObject:requestedProtocol] == NSNotFound) {
-//            [self _failWithError:[NSError errorWithDomain:SRWebSocketErrorDomain code:2133 userInfo:[NSDictionary dictionaryWithObject:[NSString stringWithFormat:@"Server specified Sec-WebSocket-Protocol that wasn't requested"] forKey:NSLocalizedDescriptionKey]]];
-//            return;
-//        }
-
+        //        if ([_requestedProtocols indexOfObject:requestedProtocol] == NSNotFound) {
+        //            [self _failWithError:[NSError errorWithDomain:SRWebSocketErrorDomain code:2133 userInfo:[NSDictionary dictionaryWithObject:[NSString stringWithFormat:@"Server specified Sec-WebSocket-Protocol that wasn't requested"] forKey:NSLocalizedDescriptionKey]]];
+        //            return;
+        //        }
+        
         _protocol = [_requestedProtocols objectAtIndex:0]; // for now just pick the first protocol as the spec indicates that they are ordered by preference
     }
-
+    
     // Sec-WebSocket-Extensions is optional and not supported
     
     self.readyState = SR_OPEN;
-
+    
     if (!_didFail) {
         [self _writeServerHTTPHeader:clientHandshake];
         [self _readFrameNew];
     }
     [self _performDelegateBlock:^{
         if ([self.delegate respondsToSelector:@selector(webSocketDidOpen:)]) {
-            [self.delegate webSocketDidOpen:self];
+            [self.delegate webSocketDidOpen:(id)self];
         };
     }];
 }
 
+- (NSString *)_generateClientAcceptHeader:(CFHTTPMessageRef)httpMessage;
+{
+    NSString *keyHeader = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(httpMessage, CFSTR("Sec-WebSocket-Key")));
+    
+    if (keyHeader == nil) {
+        return nil;
+    }
+    
+    _secKey = keyHeader; // get the random value from the header, and hash it with the websocket key
+    
+    NSString *concattedString = [_secKey stringByAppendingString:SRWebSocketAppendToSecKeyString];
+    NSString *acceptValue = [concattedString stringBySHA1ThenBase64Encoding];
+    
+    return acceptValue;
+}
 
+- (void)_writeClientHTTPHeader
+{
+    SRFastLog(@"Connected");
+    CFHTTPMessageRef request = CFHTTPMessageCreateRequest(NULL, CFSTR("GET"), (__bridge CFURLRef)_url, kCFHTTPVersion1_1);
+    
+    // Set host first so it defaults
+    CFHTTPMessageSetHeaderFieldValue(request, CFSTR("Host"), (__bridge CFStringRef)(_url.port ? [NSString stringWithFormat:@"%@:%@", _url.host, _url.port] : _url.host));
+        
+    NSMutableData *keyBytes = [[NSMutableData alloc] initWithLength:16];
+    SecRandomCopyBytes(kSecRandomDefault, keyBytes.length, keyBytes.mutableBytes);
+    _secKey = [keyBytes SR_stringByBase64Encoding];
+    assert([_secKey length] == 24);
+    
+    CFHTTPMessageSetHeaderFieldValue(request, CFSTR("Upgrade"), CFSTR("websocket"));
+    CFHTTPMessageSetHeaderFieldValue(request, CFSTR("Connection"), CFSTR("Upgrade"));
+    CFHTTPMessageSetHeaderFieldValue(request, CFSTR("Sec-WebSocket-Key"), (__bridge CFStringRef)_secKey);
+    CFHTTPMessageSetHeaderFieldValue(request, CFSTR("Sec-WebSocket-Version"), (__bridge CFStringRef)[NSString stringWithFormat:@"%ld", (long)_webSocketVersion]);
+    
+    CFHTTPMessageSetHeaderFieldValue(request, CFSTR("Origin"), (__bridge CFStringRef)_url.SR_origin);
+    
+    if (_requestedProtocols) {
+        CFHTTPMessageSetHeaderFieldValue(request, CFSTR("Sec-WebSocket-Protocol"), (__bridge CFStringRef)[_requestedProtocols componentsJoinedByString:@", "]);
+    }
+
+    [_urlRequest.allHTTPHeaderFields enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+        CFHTTPMessageSetHeaderFieldValue(request, (__bridge CFStringRef)key, (__bridge CFStringRef)obj);
+    }];
+    
+    NSData *message = CFBridgingRelease(CFHTTPMessageCopySerializedMessage(request));
+    
+    CFRelease(request);
+
+    [self _writeData:message];
+}
+
+- (void)_writeServerHTTPHeader:(NSString *)acceptHeader
+{
+    
+    CFHTTPMessageRef response = CFHTTPMessageCreateResponse(NULL, 101, CFSTR("Switching Protocols"), kCFHTTPVersion1_1);
+    
+    CFHTTPMessageSetHeaderFieldValue(response, CFSTR("Upgrade"), CFSTR("websocket"));
+    CFHTTPMessageSetHeaderFieldValue(response, CFSTR("Connection"), CFSTR("Upgrade"));
+    CFHTTPMessageSetHeaderFieldValue(response, CFSTR("Sec-WebSocket-Accept"), (__bridge CFStringRef)acceptHeader);
+    
+    if (_protocol) {
+        CFHTTPMessageSetHeaderFieldValue(response, CFSTR("Sec-WebSocket-Protocol"), (__bridge CFStringRef)_protocol);
+    }
+    
+    [_urlRequest.allHTTPHeaderFields enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+        CFHTTPMessageSetHeaderFieldValue(response, (__bridge CFStringRef)key, (__bridge CFStringRef)obj);
+    }];
+    
+    NSData *message = CFBridgingRelease(CFHTTPMessageCopySerializedMessage(response));
+    
+    CFRelease(response);
+    
+    [self _writeData:message];
+}
 
 - (void)_readServerHTTPHeader;
 {
@@ -712,7 +702,6 @@ static __strong NSData *CRLFCRLF;
     }];
 }
 
-
 - (void)didConnect
 {
     SRFastLog(@"Connected");
@@ -739,7 +728,7 @@ static void AcceptCallback(CFSocketRef socket, CFSocketCallBackType type, CFData
     assert(obj != nil);
     
     assert(socket == obj->_listeningipv4Socket || socket == obj->_listeningipv6Socket);
-#pragma unused(s)
+#pragma unused(socket)
     
     // For an accept callback, the data parameter is a pointer to a CFSocketNativeHandle.
     [obj acceptConnection:*(CFSocketNativeHandle *)data];
@@ -763,7 +752,7 @@ static void AcceptCallback(CFSocketRef socket, CFSocketCallBackType type, CFData
     _outputStream = CFBridgingRelease(writeStream);
     _inputStream = CFBridgingRelease(readStream);
 
-    // not supporting secure stuff on the stub
+    // not supporting secure stuff on the server for now
     
     //    if (_secure) {
     //        NSMutableDictionary *SSLOptions = [[NSMutableDictionary alloc] init];
@@ -898,7 +887,6 @@ static void AcceptCallback(CFSocketRef socket, CFSocketCallBackType type, CFData
             port = 443;
         }
     }
-    
     NSString *host = _url.host;
     
     CFReadStreamRef readStream = NULL;
@@ -936,13 +924,13 @@ static void AcceptCallback(CFSocketRef socket, CFSocketCallBackType type, CFData
 - (void)_connect;
 {
     if (!_scheduledRunloops.count) {
-        
         if (_socketType == SRSocketTypeServer) {
             [self scheduleInRunLoop:[NSRunLoop SR_networkServerRunLoop] forMode:NSDefaultRunLoopMode];
         } else {
             [self scheduleInRunLoop:[NSRunLoop SR_networkClientRunLoop] forMode:NSDefaultRunLoopMode];
         }
     }
+    
     
     [_outputStream open];
     [_inputStream open];
@@ -1354,7 +1342,7 @@ static const uint8_t SRPayloadLenMask   = 0x7F;
             [self _closeWithProtocolError:@"Server must receive masked data"];
         }
         
-        size_t extra_bytes_needed = header.masked ? sizeof(_currentReadMaskKey) : 0; // if we're a client do we care about the masked value?
+        size_t extra_bytes_needed = header.masked ? sizeof(_currentReadMaskKey) : 0;
         
         if (header.payload_length == 126) {
             extra_bytes_needed += sizeof(uint16_t);
@@ -1659,9 +1647,8 @@ static const size_t SRFrameHeaderOverhead = 32;
     frame_buffer[0] = SRFinMask | opcode;
     
     BOOL useMask = YES; // default to Client
-    if (_socketType == SRSocketTypeClient) { // a client MUST mask all frames that it sends to the server
-        useMask = YES;
-    } else if (_socketType == SRSocketTypeServer) { // A server MUST NOT mask any frames that it sends to the client.
+    // a client MUST mask all frames that it sends to the server
+    if (_socketType == SRSocketTypeServer) { // A server MUST NOT mask any frames that it sends to the client.
         useMask = NO;
     }
     
@@ -1723,45 +1710,43 @@ static const size_t SRFrameHeaderOverhead = 32;
 - (void)stream:(NSStream *)aStream handleEvent:(NSStreamEvent)eventCode;
 {
     assert(aStream == _inputStream || aStream == _outputStream);
-    #pragma unused(aStream)
 
-//    if (_secure && !_pinnedCertFound && (eventCode == NSStreamEventHasBytesAvailable || eventCode == NSStreamEventHasSpaceAvailable)) {
-//        
-//        NSArray *sslCerts = [_urlRequest SR_SSLPinnedCertificates];
-//        if (sslCerts) {
-//            SecTrustRef secTrust = (__bridge SecTrustRef)[aStream propertyForKey:(__bridge id)kCFStreamPropertySSLPeerTrust];
-//            if (secTrust) {
-//                NSInteger numCerts = SecTrustGetCertificateCount(secTrust);
-//                for (NSInteger i = 0; i < numCerts && !_pinnedCertFound; i++) {
-//                    SecCertificateRef cert = SecTrustGetCertificateAtIndex(secTrust, i);
-//                    NSData *certData = CFBridgingRelease(SecCertificateCopyData(cert));
-//                    
-//                    for (id ref in sslCerts) {
-//                        SecCertificateRef trustedCert = (__bridge SecCertificateRef)ref;
-//                        NSData *trustedCertData = CFBridgingRelease(SecCertificateCopyData(trustedCert));
-//                        
-//                        if ([trustedCertData isEqualToData:certData]) {
-//                            _pinnedCertFound = YES;
-//                            break;
-//                        }
-//                    }
-//                }
-//            }
-//            
-//            if (!_pinnedCertFound) {
-//                dispatch_async(_workQueue, ^{
-//                    [self _failWithError:[NSError errorWithDomain:@"org.lolrus.SocketRocket" code:23556 userInfo:[NSDictionary dictionaryWithObject:[NSString stringWithFormat:@"Invalid server cert"] forKey:NSLocalizedDescriptionKey]]];
-//                });
-//                return;
-//            }
-//        }
-//    }
-    
+    if (_secure && !_pinnedCertFound && (eventCode == NSStreamEventHasBytesAvailable || eventCode == NSStreamEventHasSpaceAvailable)) {
+        
+        NSArray *sslCerts = [_urlRequest SR_SSLPinnedCertificates];
+        if (sslCerts) {
+            SecTrustRef secTrust = (__bridge SecTrustRef)[aStream propertyForKey:(__bridge id)kCFStreamPropertySSLPeerTrust];
+            if (secTrust) {
+                NSInteger numCerts = SecTrustGetCertificateCount(secTrust);
+                for (NSInteger i = 0; i < numCerts && !_pinnedCertFound; i++) {
+                    SecCertificateRef cert = SecTrustGetCertificateAtIndex(secTrust, i);
+                    NSData *certData = CFBridgingRelease(SecCertificateCopyData(cert));
+                    
+                    for (id ref in sslCerts) {
+                        SecCertificateRef trustedCert = (__bridge SecCertificateRef)ref;
+                        NSData *trustedCertData = CFBridgingRelease(SecCertificateCopyData(trustedCert));
+                        
+                        if ([trustedCertData isEqualToData:certData]) {
+                            _pinnedCertFound = YES;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (!_pinnedCertFound) {
+                dispatch_async(_workQueue, ^{
+                    [self _failWithError:[NSError errorWithDomain:@"org.lolrus.SocketRocket" code:23556 userInfo:[NSDictionary dictionaryWithObject:[NSString stringWithFormat:@"Invalid server cert"] forKey:NSLocalizedDescriptionKey]]];
+                });
+                return;
+            }
+        }
+    }
+
     dispatch_async(_workQueue, ^{
         switch (eventCode) {
             case NSStreamEventOpenCompleted: {
                 SRFastLog(@"NSStreamEventOpenCompleted %@", aStream);
-                
                 if (self.readyState >= SR_CLOSING) {
                     return;
                 }
@@ -1777,11 +1762,6 @@ static const size_t SRFrameHeaderOverhead = 32;
                 
             case NSStreamEventErrorOccurred: {
                 SRFastLog(@"NSStreamEventErrorOccurred %@ %@", aStream, [[aStream streamError] copy]);
-                
-                if (_socketType == SRSocketTypeServer) {
-                    NSLog(@"Watch this?");
-                }
-
                 /// TODO specify error better!
                 [self _failWithError:aStream.streamError];
                 _readBufferOffset = 0;
@@ -1793,11 +1773,6 @@ static const size_t SRFrameHeaderOverhead = 32;
             case NSStreamEventEndEncountered: {
                 [self _pumpScanner];
                 SRFastLog(@"NSStreamEventEndEncountered %@", aStream);
-                
-                if (_socketType == SRSocketTypeServer) {
-                    NSLog(@"Watch this?");
-                }
-
                 if (aStream.streamError) {
                     [self _failWithError:aStream.streamError];
                 } else {
@@ -1822,7 +1797,6 @@ static const size_t SRFrameHeaderOverhead = 32;
                 
             case NSStreamEventHasBytesAvailable: {
                 SRFastLog(@"NSStreamEventHasBytesAvailable %@", aStream);
-                
                 const int bufferSize = 2048;
                 uint8_t buffer[bufferSize];
                 
@@ -1845,7 +1819,6 @@ static const size_t SRFrameHeaderOverhead = 32;
                 
             case NSStreamEventHasSpaceAvailable: {
                 SRFastLog(@"NSStreamEventHasSpaceAvailable %@", aStream);
-
                 [self _pumpWriting];
                 break;
             }
@@ -2089,7 +2062,6 @@ static NSRunLoop *networkStubRunLoop = nil;
     
     return networkStubRunLoop;
 }
-
 
 @end
 
