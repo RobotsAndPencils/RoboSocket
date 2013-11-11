@@ -53,7 +53,6 @@ NSString * const hostURL = @"ws://localhost";
 
 - (void)testSocketEcho {
     
-    NSLog(@"-----------");
     __block BOOL success = NO;
     NSString *sentMessage = @"Hello, World!";
     __block NSString *responseMessage = nil;

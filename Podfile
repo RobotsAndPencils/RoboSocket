@@ -13,7 +13,8 @@ end
 
 target "RoboSocket" do
 
-  pod 'SocketRocket', :git => 'git@github.com:RobotsAndPencils/SocketRocket.git'
+  # pod 'SocketRocket', :git => 'git@github.com:RobotsAndPencils/SocketRocket.git'
+  pod 'SocketRocket', :path => '../SocketRocket'
   pod 'Reachability', '~> 3.1'
 
 end

@@ -91,7 +91,7 @@
 		4F50DB14180EE6530035BE77 /* RoboSocketExampleTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; name = "RoboSocketExampleTests-Info.plist"; path = "Example/RoboSocketExampleTests/RoboSocketExampleTests-Info.plist"; sourceTree = "<group>"; };
 		4F50DB18180EE6530035BE77 /* RoboSocketExampleTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; name = RoboSocketExampleTests.m; path = Example/RoboSocketExampleTests/RoboSocketExampleTests.m; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		4F50DB26180EEFE80035BE77 /* libRoboSocket.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libRoboSocket.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		4F50DB2B180EEFE80035BE77 /* RoboSocket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = RoboSocket.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		4F50DB2B180EEFE80035BE77 /* RoboSocket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = RoboSocket.h; sourceTree = "<group>"; };
 		4F50DB2D180EEFE80035BE77 /* RoboSocket.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = RoboSocket.m; sourceTree = "<group>"; };
 		4F50DB33180EEFE80035BE77 /* RoboSocketTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoboSocketTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4F50DB3C180EEFE80035BE77 /* RoboSocketTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "RoboSocketTests-Info.plist"; sourceTree = "<group>"; };
