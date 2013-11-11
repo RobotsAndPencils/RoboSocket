@@ -49,22 +49,22 @@
 // RoboSocket needs two delegates - one for messages and one for control? (open/close?)
 
 - (void)webSocket:(SRWebSocket *)webSocket didReceiveMessage:(id)message {
-    NSLog(@"received message %@", message);
+    // NSLog(@"received message %@", message);
     [self.messageDelegate webSocket:self didReceiveMessage:message];
 }
 
 - (void)webSocketDidOpen:(SRWebSocket *)webSocket {
-    NSLog(@"socket opened");
+    // NSLog(@"socket opened");
     [self.controlDelegate webSocketDidOpen:self];
 }
 
 - (void)webSocket:(SRWebSocket *)webSocket didFailWithError:(NSError *)error {
-    NSLog(@"socket failed");
+    // NSLog(@"socket failed");
     [self.messageDelegate webSocket:self didFailWithError:error];
 }
 
 - (void)webSocket:(SRWebSocket *)webSocket didCloseWithCode:(NSInteger)code reason:(NSString *)reason wasClean:(BOOL)wasClean {
-    NSLog(@"socket closed");
+    // NSLog(@"socket closed");
     [self.controlDelegate webSocket:self didCloseWithCode:code reason:reason wasClean:wasClean];
 
 }

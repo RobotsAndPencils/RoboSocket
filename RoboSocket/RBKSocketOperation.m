@@ -269,7 +269,7 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
     [self.lock lock];
     if (! [self isCancelled]) {
         
-        NSLog(@"start");
+        // NSLog(@"start socket operation");
         
         self.socket.messageDelegate = self;
         [self.socket sendMessage:self.message];
