@@ -118,7 +118,7 @@ Pod::Spec.new do |s|
   # s.library   = 'iconv'
   # s.libraries = 'iconv', 'xml2'
   
-  s.libraries          = 'icucore' # needed by SocketRocket
+  # s.libraries          = 'icucore' # needed by SocketRocket
 
   # ――― Project Settings ――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
   #
