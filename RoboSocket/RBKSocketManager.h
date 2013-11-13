@@ -15,6 +15,8 @@
 
 - (instancetype)initWithSocketURL:(NSURL *)socketURL;
 
+- (void)closeSocket;
+
 - (RBKSocketOperation *)socketOperationWithMessage:(NSString *)message
                                            success:(void (^)(RBKSocketOperation *operation, id responseObject))success
                                            failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure;

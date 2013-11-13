@@ -74,7 +74,9 @@
 }
 
 - (void)closeSocket {
-    [self.socket openSocket];
+    [self.socket closeSocket];
+    
+    while (self.socketOpen && [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.1]]); // don't advance until the socket has closed completely
 }
 
 #pragma mark - RBKSocketControlDelegate
