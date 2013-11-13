@@ -17,11 +17,11 @@
 
 - (void)closeSocket;
 
-- (RBKSocketOperation *)socketOperationWithMessage:(NSString *)message
+- (RBKSocketOperation *)socketOperationWithMessage:(id)message
                                            success:(void (^)(RBKSocketOperation *operation, id responseObject))success
                                            failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure;
 
-- (RBKSocketOperation *)sendSocketOperationWithMessage:(NSString *)message
+- (RBKSocketOperation *)sendSocketOperationWithMessage:(id)message
                                                success:(void (^)(RBKSocketOperation *operation, id responseObject))success
                                                failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure;
 @end

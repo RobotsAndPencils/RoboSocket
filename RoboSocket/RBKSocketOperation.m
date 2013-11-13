@@ -132,7 +132,7 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
     return _networkRequestThread;
 }
 
-- (instancetype)initWithRequestMessage:(NSString *)message {
+- (instancetype)initWithRequestMessage:(id)message {
     NSParameterAssert(message);
     
     self = [super init];

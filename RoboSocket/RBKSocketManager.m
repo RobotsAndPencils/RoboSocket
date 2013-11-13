@@ -35,7 +35,7 @@
     return self;
 }
 
-- (RBKSocketOperation *)socketOperationWithMessage:(NSString *)message
+- (RBKSocketOperation *)socketOperationWithMessage:(id)message
                                            success:(void (^)(RBKSocketOperation *operation, id responseObject))success
                                            failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure {
     
@@ -53,7 +53,7 @@
     return operation;
 }
 
-- (RBKSocketOperation *)sendSocketOperationWithMessage:(NSString *)message
+- (RBKSocketOperation *)sendSocketOperationWithMessage:(id)message
                                                success:(void (^)(RBKSocketOperation *operation, id responseObject))success
                                                failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure {
     RBKSocketOperation *operation = [self socketOperationWithMessage:message success:success failure:failure];
@@ -77,6 +77,7 @@
     [self.socket closeSocket];
     
     while (self.socketOpen && [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.1]]); // don't advance until the socket has closed completely
+    // NSLog(@"Socket Closed");
 }
 
 #pragma mark - RBKSocketControlDelegate

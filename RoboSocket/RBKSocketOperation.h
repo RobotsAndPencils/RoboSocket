@@ -92,7 +92,7 @@ extern NSString * const RBKSocketOperationDidFinishNotification;
 @property (nonatomic, strong) RoboSocket *socket;
 
 
-- (instancetype)initWithRequestMessage:(NSString *)message;
+- (instancetype)initWithRequestMessage:(id)message;
 
 - (void)setCompletionBlockWithSuccess:(void (^)(RBKSocketOperation *operation, id responseObject))success
                               failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure;
