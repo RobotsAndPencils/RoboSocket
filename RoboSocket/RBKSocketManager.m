@@ -30,18 +30,37 @@
         _operationQueue = [[NSOperationQueue alloc] init];
         _pendingOperations = [NSMutableArray array];
         _socketOpen = NO;
+        _requestSerializer = [RBKSocketStringRequestSerializer serializer];
+        _responseSerializer = [RBKSocketStringResponseSerializer serializer];
         [self openSocket];
     }
     return self;
 }
+
+#pragma mark -
+
+- (void)setRequestSerializer:(RBKSocketRequestSerializer <RBKSocketRequestSerialization> *)requestSerializer {
+    NSParameterAssert(requestSerializer);
+    
+    _requestSerializer = requestSerializer;
+}
+
+- (void)setResponseSerializer:(RBKSocketResponseSerializer <RBKSocketResponseSerialization> *)responseSerializer {
+    NSParameterAssert(responseSerializer);
+    
+    _responseSerializer = responseSerializer;
+}
+
+#pragma mark -
 
 - (RBKSocketOperation *)socketOperationWithMessage:(id)message
                                            success:(void (^)(RBKSocketOperation *operation, id responseObject))success
                                            failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure {
     
     
-    RBKSocketOperation *operation = [[RBKSocketOperation alloc] initWithRequestMessage:message];
-    // operation.responseSerializer = self.responseSerializer;
+    RBKSocketOperation *operation = [self.requestSerializer requestOperationWithMessage:message];
+    
+    operation.responseSerializer = self.responseSerializer;
     // operation.shouldUseCredentialStorage = self.shouldUseCredentialStorage;
     // operation.credential = self.credential;
     // operation.securityPolicy = self.securityPolicy;

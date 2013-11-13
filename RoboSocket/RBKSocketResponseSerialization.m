@@ -46,7 +46,6 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
     self.stringEncoding = NSUTF8StringEncoding;
 
     self.acceptableStatusCodes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(200, 100)];
-    self.acceptableContentTypes = nil;
 
     return self;
 }
@@ -57,35 +56,37 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
                     data:(NSData *)data
                    error:(NSError *__autoreleasing *)error
 {
-    if (response && [response isKindOfClass:[NSHTTPURLResponse class]]) {
-        if (self.acceptableStatusCodes && ![self.acceptableStatusCodes containsIndex:(NSUInteger)response.statusCode]) {
-            NSDictionary *userInfo = @{
-                                       NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedStringFromTable(@"Request failed: %@ (%d)", @"AFNetworking", nil), [NSHTTPURLResponse localizedStringForStatusCode:response.statusCode], response.statusCode],
-                                       NSURLErrorFailingURLErrorKey:[response URL],
-                                       RBKSocketNetworkingOperationFailingURLResponseErrorKey: response
-                                       };
-            if (error) {
-                *error = [[NSError alloc] initWithDomain:RBKSocketNetworkingErrorDomain code:NSURLErrorBadServerResponse userInfo:userInfo];
-            }
+//    if (response && [response isKindOfClass:[NSHTTPURLResponse class]]) {
+//        if (self.acceptableStatusCodes && ![self.acceptableStatusCodes containsIndex:(NSUInteger)response.statusCode]) {
+//            NSDictionary *userInfo = @{
+//                                       NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedStringFromTable(@"Request failed: %@ (%d)", @"AFNetworking", nil), [NSHTTPURLResponse localizedStringForStatusCode:response.statusCode], response.statusCode],
+//                                       NSURLErrorFailingURLErrorKey:[response URL],
+//                                       RBKSocketNetworkingOperationFailingURLResponseErrorKey: response
+//                                       };
+//            if (error) {
+//                *error = [[NSError alloc] initWithDomain:RBKSocketNetworkingErrorDomain code:NSURLErrorBadServerResponse userInfo:userInfo];
+//            }
+//
+//            return NO;
+//        } else if (self.acceptableContentTypes && ![self.acceptableContentTypes containsObject:[response MIMEType]]) {
+//            // Don't invalidate content type if there is no content
+//            if ([data length] > 0) {
+//                NSDictionary *userInfo = @{
+//                                           NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedStringFromTable(@"Request failed: unacceptable content-type: %@", @"AFNetworking", nil), [response MIMEType]],
+//                                           NSURLErrorFailingURLErrorKey:[response URL],
+//                                           RBKSocketNetworkingOperationFailingURLResponseErrorKey: response
+//                                           };
+//                if (error) {
+//                    *error = [[NSError alloc] initWithDomain:RBKSocketNetworkingErrorDomain code:NSURLErrorCannotDecodeContentData userInfo:userInfo];
+//                }
+//
+//                return NO;
+//            }
+//        }
+//    }
 
-            return NO;
-        } else if (self.acceptableContentTypes && ![self.acceptableContentTypes containsObject:[response MIMEType]]) {
-            // Don't invalidate content type if there is no content
-            if ([data length] > 0) {
-                NSDictionary *userInfo = @{
-                                           NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedStringFromTable(@"Request failed: unacceptable content-type: %@", @"AFNetworking", nil), [response MIMEType]],
-                                           NSURLErrorFailingURLErrorKey:[response URL],
-                                           RBKSocketNetworkingOperationFailingURLResponseErrorKey: response
-                                           };
-                if (error) {
-                    *error = [[NSError alloc] initWithDomain:RBKSocketNetworkingErrorDomain code:NSURLErrorCannotDecodeContentData userInfo:userInfo];
-                }
-
-                return NO;
-            }
-        }
-    }
-
+    NSLog(@"DWA: Need to validate the response");
+    
     return YES;
 }
 
@@ -109,14 +110,12 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
     }
 
     self.acceptableStatusCodes = [decoder decodeObjectForKey:NSStringFromSelector(@selector(acceptableStatusCodes))];
-    self.acceptableContentTypes = [decoder decodeObjectForKey:NSStringFromSelector(@selector(acceptableContentTypes))];
 
     return self;
 }
 
 - (void)encodeWithCoder:(NSCoder *)coder {
     [coder encodeObject:self.acceptableStatusCodes forKey:NSStringFromSelector(@selector(acceptableStatusCodes))];
-    [coder encodeObject:self.acceptableContentTypes forKey:NSStringFromSelector(@selector(acceptableContentTypes))];
 }
 
 #pragma mark - NSCopying
@@ -124,12 +123,247 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
 - (id)copyWithZone:(NSZone *)zone {
     RBKSocketResponseSerializer *serializer = [[[self class] allocWithZone:zone] init];
     serializer.acceptableStatusCodes = [self.acceptableStatusCodes copyWithZone:zone];
-    serializer.acceptableContentTypes = [self.acceptableContentTypes copyWithZone:zone];
 
     return serializer;
 }
 
 @end
+
+
+
+
+
+
+
+
+
+#pragma mark -
+
+@implementation RBKSocketStringResponseSerializer
+
++ (instancetype)serializer {
+    return [self serializerWithReadingOptions:0];
+}
+
++ (instancetype)serializerWithReadingOptions:(NSUInteger)readingOptions {
+    RBKSocketStringResponseSerializer *serializer = [[self alloc] init];
+    serializer.readingOptions = readingOptions;
+    
+    return serializer;
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (!self) {
+        return nil;
+    }
+    
+    return self;
+}
+
+#pragma mark - RBKSocketRequestSerialization
+
+- (id)responseObjectForResponse:(NSURLResponse *)response
+                           data:(NSData *)data
+                          error:(NSError *__autoreleasing *)error
+{
+    if (![self validateResponse:(NSHTTPURLResponse *)response data:data error:error]) {
+        if ([(NSError *)(*error) code] == NSURLErrorCannotDecodeContentData) {
+            return nil;
+        }
+    }
+    
+//    // Workaround for behavior of Rails to return a single space for `head :ok` (a workaround for a bug in Safari), which is not interpreted as valid input by NSJSONSerialization.
+//    // See https://github.com/rails/rails/issues/1742
+//    NSStringEncoding stringEncoding = self.stringEncoding;
+//    if (response.textEncodingName) {
+//        CFStringEncoding encoding = CFStringConvertIANACharSetNameToEncoding((CFStringRef)response.textEncodingName);
+//        if (encoding != kCFStringEncodingInvalidId) {
+//            stringEncoding = CFStringConvertEncodingToNSStringEncoding(encoding);
+//        }
+//    }
+//    
+//    NSString *responseString = [[NSString alloc] initWithData:data encoding:stringEncoding];
+//    if (responseString && ![responseString isEqualToString:@" "]) {
+//        // Workaround for a bug in NSJSONSerialization when Unicode character escape codes are used instead of the actual character
+//        // See http://stackoverflow.com/a/12843465/157142
+//        data = [responseString dataUsingEncoding:NSUTF8StringEncoding];
+//        
+//        if (data) {
+//            if ([data length] > 0) {
+//                return [NSJSONSerialization JSONObjectWithData:data options:self.readingOptions error:error];
+//            } else {
+//                return nil;
+//            }
+//        } else {
+//            NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
+//            [userInfo setValue:NSLocalizedStringFromTable(@"Data failed decoding as a UTF-8 string", nil, @"AFNetworking") forKey:NSLocalizedDescriptionKey];
+//            [userInfo setValue:[NSString stringWithFormat:NSLocalizedStringFromTable(@"Could not decode string: %@", nil, @"AFNetworking"), responseString] forKey:NSLocalizedFailureReasonErrorKey];
+//            if (error) {
+//                *error = [[NSError alloc] initWithDomain:RBKSocketNetworkingErrorDomain code:NSURLErrorCannotDecodeContentData userInfo:userInfo];
+//            }
+//        }
+//    }
+    
+    NSLog(@"DWA: need to create our response object");
+    
+    return nil;
+}
+
+#pragma mark - NSCoding
+
+- (id)initWithCoder:(NSCoder *)decoder {
+    self = [super initWithCoder:decoder];
+    if (!self) {
+        return nil;
+    }
+    
+    self.readingOptions = [decoder decodeIntegerForKey:NSStringFromSelector(@selector(readingOptions))];
+    
+    return self;
+}
+
+- (void)encodeWithCoder:(NSCoder *)coder {
+    [super encodeWithCoder:coder];
+    
+    [coder encodeInteger:self.readingOptions forKey:NSStringFromSelector(@selector(readingOptions))];
+}
+
+#pragma mark - NSCopying
+
+- (id)copyWithZone:(NSZone *)zone {
+    RBKSocketStringResponseSerializer *serializer = [[[self class] allocWithZone:zone] init];
+    serializer.readingOptions = self.readingOptions;
+    
+    return serializer;
+}
+
+@end
+
+
+
+
+
+
+
+#pragma mark -
+
+@implementation RBKSocketDataResponseSerializer
+
++ (instancetype)serializer {
+    return [self serializerWithReadingOptions:0];
+}
+
++ (instancetype)serializerWithReadingOptions:(NSUInteger)readingOptions {
+    RBKSocketDataResponseSerializer *serializer = [[self alloc] init];
+    serializer.readingOptions = readingOptions;
+    
+    return serializer;
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (!self) {
+        return nil;
+    }
+    
+    return self;
+}
+
+#pragma mark - RBKSocketRequestSerialization
+
+- (id)responseObjectForResponse:(NSURLResponse *)response
+                           data:(NSData *)data
+                          error:(NSError *__autoreleasing *)error
+{
+    if (![self validateResponse:(NSHTTPURLResponse *)response data:data error:error]) {
+        if ([(NSError *)(*error) code] == NSURLErrorCannotDecodeContentData) {
+            return nil;
+        }
+    }
+    
+    //    // Workaround for behavior of Rails to return a single space for `head :ok` (a workaround for a bug in Safari), which is not interpreted as valid input by NSJSONSerialization.
+    //    // See https://github.com/rails/rails/issues/1742
+    //    NSStringEncoding stringEncoding = self.stringEncoding;
+    //    if (response.textEncodingName) {
+    //        CFStringEncoding encoding = CFStringConvertIANACharSetNameToEncoding((CFStringRef)response.textEncodingName);
+    //        if (encoding != kCFStringEncodingInvalidId) {
+    //            stringEncoding = CFStringConvertEncodingToNSStringEncoding(encoding);
+    //        }
+    //    }
+    //
+    //    NSString *responseString = [[NSString alloc] initWithData:data encoding:stringEncoding];
+    //    if (responseString && ![responseString isEqualToString:@" "]) {
+    //        // Workaround for a bug in NSJSONSerialization when Unicode character escape codes are used instead of the actual character
+    //        // See http://stackoverflow.com/a/12843465/157142
+    //        data = [responseString dataUsingEncoding:NSUTF8StringEncoding];
+    //
+    //        if (data) {
+    //            if ([data length] > 0) {
+    //                return [NSJSONSerialization JSONObjectWithData:data options:self.readingOptions error:error];
+    //            } else {
+    //                return nil;
+    //            }
+    //        } else {
+    //            NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
+    //            [userInfo setValue:NSLocalizedStringFromTable(@"Data failed decoding as a UTF-8 string", nil, @"AFNetworking") forKey:NSLocalizedDescriptionKey];
+    //            [userInfo setValue:[NSString stringWithFormat:NSLocalizedStringFromTable(@"Could not decode string: %@", nil, @"AFNetworking"), responseString] forKey:NSLocalizedFailureReasonErrorKey];
+    //            if (error) {
+    //                *error = [[NSError alloc] initWithDomain:RBKSocketNetworkingErrorDomain code:NSURLErrorCannotDecodeContentData userInfo:userInfo];
+    //            }
+    //        }
+    //    }
+    
+    NSLog(@"DWA: need to create our response object");
+    
+    return nil;
+}
+
+#pragma mark - NSCoding
+
+- (id)initWithCoder:(NSCoder *)decoder {
+    self = [super initWithCoder:decoder];
+    if (!self) {
+        return nil;
+    }
+    
+    self.readingOptions = [decoder decodeIntegerForKey:NSStringFromSelector(@selector(readingOptions))];
+    
+    return self;
+}
+
+- (void)encodeWithCoder:(NSCoder *)coder {
+    [super encodeWithCoder:coder];
+    
+    [coder encodeInteger:self.readingOptions forKey:NSStringFromSelector(@selector(readingOptions))];
+}
+
+#pragma mark - NSCopying
+
+- (id)copyWithZone:(NSZone *)zone {
+    RBKSocketDataResponseSerializer *serializer = [[[self class] allocWithZone:zone] init];
+    serializer.readingOptions = self.readingOptions;
+    
+    return serializer;
+}
+
+@end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #pragma mark -
 
@@ -151,8 +385,6 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
     if (!self) {
         return nil;
     }
-
-    self.acceptableContentTypes = [NSSet setWithObjects:@"application/json", @"text/json", @"text/javascript", nil];
 
     return self;
 }
@@ -250,8 +482,6 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
         return nil;
     }
 
-    self.acceptableContentTypes = [[NSSet alloc] initWithObjects:@"application/xml", @"text/xml", nil];
-
     return self;
 }
 
@@ -294,8 +524,6 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
     if (!self) {
         return nil;
     }
-
-    self.acceptableContentTypes = [[NSSet alloc] initWithObjects:@"application/xml", @"text/xml", nil];
 
     return self;
 }
@@ -370,8 +598,6 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
     if (!self) {
         return nil;
     }
-
-    self.acceptableContentTypes = [[NSSet alloc] initWithObjects:@"application/x-plist", nil];
 
     return self;
 }
@@ -533,8 +759,6 @@ static UIImage * AFInflatedImageFromResponseWithDataAtScale(NSHTTPURLResponse *r
         return nil;
     }
 
-    self.acceptableContentTypes = [[NSSet alloc] initWithObjects:@"image/tiff", @"image/jpeg", @"image/gif", @"image/png", @"image/ico", @"image/x-icon", @"image/bmp", @"image/x-bmp", @"image/x-xbitmap", @"image/x-win-bitmap", nil];
-
 #if defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
     self.imageScale = [[UIScreen mainScreen] scale];
     self.automaticallyInflatesResponseImage = YES;
@@ -685,6 +909,110 @@ static UIImage * AFInflatedImageFromResponseWithDataAtScale(NSHTTPURLResponse *r
     RBKSocketCompoundResponseSerializer *serializer = [[[self class] allocWithZone:zone] init];
     serializer.responseSerializers = self.responseSerializers;
 
+    return serializer;
+}
+
+@end
+
+
+#pragma mark -
+
+@implementation RBKSocketSTOMPResponseSerializer
+
++ (instancetype)serializer {
+    return [self serializerWithReadingOptions:0];
+}
+
++ (instancetype)serializerWithReadingOptions:(NSUInteger)readingOptions {
+    RBKSocketSTOMPResponseSerializer *serializer = [[self alloc] init];
+    serializer.readingOptions = readingOptions;
+    
+    return serializer;
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (!self) {
+        return nil;
+    }
+        
+    return self;
+}
+
+#pragma mark - RBKSocketRequestSerialization
+
+- (id)responseObjectForResponse:(NSURLResponse *)response
+                           data:(NSData *)data
+                          error:(NSError *__autoreleasing *)error
+{
+    if (![self validateResponse:(NSHTTPURLResponse *)response data:data error:error]) {
+        if ([(NSError *)(*error) code] == NSURLErrorCannotDecodeContentData) {
+            return nil;
+        }
+    }
+    
+    //    // Workaround for behavior of Rails to return a single space for `head :ok` (a workaround for a bug in Safari), which is not interpreted as valid input by NSJSONSerialization.
+    //    // See https://github.com/rails/rails/issues/1742
+    //    NSStringEncoding stringEncoding = self.stringEncoding;
+    //    if (response.textEncodingName) {
+    //        CFStringEncoding encoding = CFStringConvertIANACharSetNameToEncoding((CFStringRef)response.textEncodingName);
+    //        if (encoding != kCFStringEncodingInvalidId) {
+    //            stringEncoding = CFStringConvertEncodingToNSStringEncoding(encoding);
+    //        }
+    //    }
+    //
+    //    NSString *responseString = [[NSString alloc] initWithData:data encoding:stringEncoding];
+    //    if (responseString && ![responseString isEqualToString:@" "]) {
+    //        // Workaround for a bug in NSJSONSerialization when Unicode character escape codes are used instead of the actual character
+    //        // See http://stackoverflow.com/a/12843465/157142
+    //        data = [responseString dataUsingEncoding:NSUTF8StringEncoding];
+    //
+    //        if (data) {
+    //            if ([data length] > 0) {
+    //                return [NSJSONSerialization JSONObjectWithData:data options:self.readingOptions error:error];
+    //            } else {
+    //                return nil;
+    //            }
+    //        } else {
+    //            NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
+    //            [userInfo setValue:NSLocalizedStringFromTable(@"Data failed decoding as a UTF-8 string", nil, @"AFNetworking") forKey:NSLocalizedDescriptionKey];
+    //            [userInfo setValue:[NSString stringWithFormat:NSLocalizedStringFromTable(@"Could not decode string: %@", nil, @"AFNetworking"), responseString] forKey:NSLocalizedFailureReasonErrorKey];
+    //            if (error) {
+    //                *error = [[NSError alloc] initWithDomain:RBKSocketNetworkingErrorDomain code:NSURLErrorCannotDecodeContentData userInfo:userInfo];
+    //            }
+    //        }
+    //    }
+    
+    NSLog(@"DWA: need to create our response object");
+    
+    return nil;
+}
+
+#pragma mark - NSCoding
+
+- (id)initWithCoder:(NSCoder *)decoder {
+    self = [super initWithCoder:decoder];
+    if (!self) {
+        return nil;
+    }
+    
+    self.readingOptions = [decoder decodeIntegerForKey:NSStringFromSelector(@selector(readingOptions))];
+    
+    return self;
+}
+
+- (void)encodeWithCoder:(NSCoder *)coder {
+    [super encodeWithCoder:coder];
+    
+    [coder encodeInteger:self.readingOptions forKey:NSStringFromSelector(@selector(readingOptions))];
+}
+
+#pragma mark - NSCopying
+
+- (id)copyWithZone:(NSZone *)zone {
+    RBKSocketDataResponseSerializer *serializer = [[[self class] allocWithZone:zone] init];
+    serializer.readingOptions = self.readingOptions;
+    
     return serializer;
 }
 

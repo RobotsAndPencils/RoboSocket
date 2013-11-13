@@ -21,6 +21,7 @@
 // THE SOFTWARE.
 
 #import "RBKSocketRequestSerialization.h"
+#import "RBKSocketOperation.h"
 
 extern NSString * const RBKSocketNetworkingErrorDomain;
 
@@ -253,103 +254,62 @@ NSArray * AFQueryStringPairsFromKeyAndValue(NSString *key, id value) {
 
 #pragma mark -
 
-- (NSMutableURLRequest *)requestWithMethod:(NSString *)method
-                                 URLString:(NSString *)URLString
-                                parameters:(NSDictionary *)parameters
-{
-    NSParameterAssert(method);
-    NSParameterAssert(URLString);
+- (RBKSocketOperation *)requestOperationWithMessage:(id)message {
+    RBKSocketOperation *request = [[RBKSocketOperation alloc] initWithRequestMessage:message];
+    NSParameterAssert(message);
 
-    NSURL *url = [NSURL URLWithString:URLString];
+    request = [self requestBySerializingRequest:request withParameters:nil error:nil];
+    
+    return request;
 
-    NSParameterAssert(url);
-
-    NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:url];
-    [request setHTTPMethod:method];
-
-    request = [[self requestBySerializingRequest:request withParameters:parameters error:nil] mutableCopy];
-
-	return request;
-}
-
-- (NSMutableURLRequest *)multipartFormRequestWithMethod:(NSString *)method
-                                              URLString:(NSString *)URLString
-                                             parameters:(NSDictionary *)parameters
-                              constructingBodyWithBlock:(void (^)(id <RBKSocketMultipartFormData> formData))block
-{
-    NSParameterAssert(method);
-    NSParameterAssert(![method isEqualToString:@"GET"] && ![method isEqualToString:@"HEAD"]);
-
-    NSMutableURLRequest *request = [self requestWithMethod:method URLString:URLString parameters:nil];
-
-    __block RBKSocketStreamingMultipartFormData *formData = [[RBKSocketStreamingMultipartFormData alloc] initWithURLRequest:request stringEncoding:NSUTF8StringEncoding];
-
-    if (parameters) {
-        for (AFQueryStringPair *pair in AFQueryStringPairsFromDictionary(parameters)) {
-            NSData *data = nil;
-            if ([pair.value isKindOfClass:[NSData class]]) {
-                data = pair.value;
-            } else if ([pair.value isEqual:[NSNull null]]) {
-                data = [NSData data];
-            } else {
-                data = [[pair.value description] dataUsingEncoding:self.stringEncoding];
-            }
-
-            if (data) {
-                [formData appendPartWithFormData:data name:[pair.field description]];
-            }
-        }
-    }
-
-    if (block) {
-        block((id<RBKSocketMultipartFormData>)formData);
-    }
-
-    return [formData requestByFinalizingMultipartFormData];
 }
 
 #pragma mark - AFURLRequestSerialization
 
-- (NSURLRequest *)requestBySerializingRequest:(NSURLRequest *)request
-                               withParameters:(NSDictionary *)parameters
-                                        error:(NSError *__autoreleasing *)error
+- (RBKSocketOperation *)requestBySerializingRequest:(RBKSocketOperation *)request
+                                     withParameters:(NSDictionary *)parameters
+                                              error:(NSError *__autoreleasing *)error
 {
     NSParameterAssert(request);
 
-    NSMutableURLRequest *mutableRequest = [request mutableCopy];
+    // DWA: not sure if this is even needed as a base implementation
+    
+//    NSMutableURLRequest *mutableRequest = [request mutableCopy];
+//
+//    [self.HTTPRequestHeaders enumerateKeysAndObjectsUsingBlock:^(id field, id value, BOOL * __unused stop) {
+//        if (![request valueForHTTPHeaderField:field]) {
+//            [mutableRequest setValue:value forHTTPHeaderField:field];
+//        }
+//    }];
+//
+//    if (!parameters) {
+//        return mutableRequest;
+//    }
+//
+//    NSString *query = nil;
+//    if (self.queryStringSerialization) {
+//        query = self.queryStringSerialization(request, parameters, error);
+//    } else {
+//        switch (self.queryStringSerializationStyle) {
+//            case RBKSocketRequestQueryStringDefaultStyle:
+//                query = AFQueryStringFromParametersWithEncoding(parameters, self.stringEncoding);
+//                break;
+//            default:
+//                break;
+//        }
+//    }
+//
+//    if ([self.HTTPMethodsEncodingParametersInURI containsObject:[[request HTTPMethod] uppercaseString]]) {
+//        mutableRequest.URL = [NSURL URLWithString:[[mutableRequest.URL absoluteString] stringByAppendingFormat:mutableRequest.URL.query ? @"&%@" : @"?%@", AFQueryStringFromParametersWithEncoding(parameters, self.stringEncoding)]];
+//    } else {
+//        NSString *charset = (__bridge NSString *)CFStringConvertEncodingToIANACharSetName(CFStringConvertNSStringEncodingToEncoding(self.stringEncoding));
+//        [mutableRequest setValue:[NSString stringWithFormat:@"application/x-www-form-urlencoded; charset=%@", charset] forHTTPHeaderField:@"Content-Type"];
+//        [mutableRequest setHTTPBody:[query dataUsingEncoding:self.stringEncoding]];
+//    }
 
-    [self.HTTPRequestHeaders enumerateKeysAndObjectsUsingBlock:^(id field, id value, BOOL * __unused stop) {
-        if (![request valueForHTTPHeaderField:field]) {
-            [mutableRequest setValue:value forHTTPHeaderField:field];
-        }
-    }];
-
-    if (!parameters) {
-        return mutableRequest;
-    }
-
-    NSString *query = nil;
-    if (self.queryStringSerialization) {
-        query = self.queryStringSerialization(request, parameters, error);
-    } else {
-        switch (self.queryStringSerializationStyle) {
-            case RBKSocketRequestQueryStringDefaultStyle:
-                query = AFQueryStringFromParametersWithEncoding(parameters, self.stringEncoding);
-                break;
-            default:
-                break;
-        }
-    }
-
-    if ([self.HTTPMethodsEncodingParametersInURI containsObject:[[request HTTPMethod] uppercaseString]]) {
-        mutableRequest.URL = [NSURL URLWithString:[[mutableRequest.URL absoluteString] stringByAppendingFormat:mutableRequest.URL.query ? @"&%@" : @"?%@", AFQueryStringFromParametersWithEncoding(parameters, self.stringEncoding)]];
-    } else {
-        NSString *charset = (__bridge NSString *)CFStringConvertEncodingToIANACharSetName(CFStringConvertNSStringEncodingToEncoding(self.stringEncoding));
-        [mutableRequest setValue:[NSString stringWithFormat:@"application/x-www-form-urlencoded; charset=%@", charset] forHTTPHeaderField:@"Content-Type"];
-        [mutableRequest setHTTPBody:[query dataUsingEncoding:self.stringEncoding]];
-    }
-
-    return mutableRequest;
+    NSLog(@"DWA: need to build our request correctly");
+    
+    return nil; // mutableRequest;
 }
 
 #pragma mark - NSCoding
@@ -1005,6 +965,124 @@ typedef enum {
 
 @end
 
+
+
+
+#pragma mark -
+
+@implementation RBKSocketStringRequestSerializer
+
++ (instancetype)serializer {
+    return [self serializerWithWritingOptions:0];
+}
+
++ (instancetype)serializerWithWritingOptions:(NSUInteger)writingOptions
+{
+    RBKSocketStringRequestSerializer *serializer = [[self alloc] init];
+    serializer.writingOptions = writingOptions;
+    
+    return serializer;
+}
+
+#pragma mark - AFURLRequestSerialization
+
+- (RBKSocketOperation *)requestBySerializingRequest:(RBKSocketOperation *)request
+                                     withParameters:(NSDictionary *)parameters
+                                              error:(NSError *__autoreleasing *)error
+{
+    NSParameterAssert(request);
+    
+    id message = request.requestMessage;
+    
+    if ([message isKindOfClass:[NSString class]]) {
+        return request;
+    }
+    
+    if ([message isKindOfClass:[NSData class]]) {
+        NSString *messageAsString = [[NSString alloc] initWithData:message encoding:NSUTF8StringEncoding];;
+        return [[RBKSocketOperation alloc] initWithRequestMessage:messageAsString];
+    }
+    
+    // not sure how to (or if we should) coerce other formats into a string
+    NSLog(@"Unsupported request message type %@ for serialization as a string", NSStringFromClass([message class]));
+    return nil;
+}
+
+@end
+
+
+
+
+
+
+#pragma mark -
+
+@implementation RBKSocketDataRequestSerializer
+
++ (instancetype)serializer {
+    return [self serializerWithWritingOptions:0];
+}
+
++ (instancetype)serializerWithWritingOptions:(NSUInteger)writingOptions
+{
+    RBKSocketDataRequestSerializer *serializer = [[self alloc] init];
+    serializer.writingOptions = writingOptions;
+    
+    return serializer;
+}
+
+#pragma mark - AFURLRequestSerialization
+
+- (RBKSocketOperation *)requestBySerializingRequest:(RBKSocketOperation *)request
+                                     withParameters:(NSDictionary *)parameters
+                                              error:(NSError *__autoreleasing *)error
+{
+    NSParameterAssert(request);
+    
+//    if ([self.HTTPMethodsEncodingParametersInURI containsObject:[[request HTTPMethod] uppercaseString]]) {
+//        return [super requestBySerializingRequest:request withParameters:parameters error:error];
+//    }
+//    
+//    NSMutableURLRequest *mutableRequest = [request mutableCopy];
+//    
+//    [self.HTTPRequestHeaders enumerateKeysAndObjectsUsingBlock:^(id field, id value, BOOL * __unused stop) {
+//        if (![request valueForHTTPHeaderField:field]) {
+//            [mutableRequest setValue:value forHTTPHeaderField:field];
+//        }
+//    }];
+//    
+//    if (!parameters) {
+//        return mutableRequest;
+//    }
+//    
+//    NSString *charset = (__bridge NSString *)CFStringConvertEncodingToIANACharSetName(CFStringConvertNSStringEncodingToEncoding(NSUTF8StringEncoding));
+//    
+//    [mutableRequest setValue:[NSString stringWithFormat:@"application/json; charset=%@", charset] forHTTPHeaderField:@"Content-Type"];
+//    [mutableRequest setHTTPBody:[NSJSONSerialization dataWithJSONObject:parameters options:self.writingOptions error:error]];
+    
+    NSLog(@"Figure out request");
+    
+    return nil; //mutableRequest;
+}
+
+@end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #pragma mark -
 
 @implementation RBKSocketJSONRequestSerializer
@@ -1023,34 +1101,38 @@ typedef enum {
 
 #pragma mark - AFURLRequestSerialization
 
-- (NSURLRequest *)requestBySerializingRequest:(NSURLRequest *)request
+- (RBKSocketOperation *)requestBySerializingRequest:(RBKSocketOperation *)request
                                withParameters:(NSDictionary *)parameters
                                         error:(NSError *__autoreleasing *)error
 {
     NSParameterAssert(request);
 
-    if ([self.HTTPMethodsEncodingParametersInURI containsObject:[[request HTTPMethod] uppercaseString]]) {
-        return [super requestBySerializingRequest:request withParameters:parameters error:error];
-    }
-
-    NSMutableURLRequest *mutableRequest = [request mutableCopy];
-
-    [self.HTTPRequestHeaders enumerateKeysAndObjectsUsingBlock:^(id field, id value, BOOL * __unused stop) {
-        if (![request valueForHTTPHeaderField:field]) {
-            [mutableRequest setValue:value forHTTPHeaderField:field];
-        }
-    }];
+//    if ([self.HTTPMethodsEncodingParametersInURI containsObject:[[request HTTPMethod] uppercaseString]]) {
+//        return [super requestBySerializingRequest:request withParameters:parameters error:error];
+//    }
+//
+//    NSMutableURLRequest *mutableRequest = [request mutableCopy];
+//
+//    [self.HTTPRequestHeaders enumerateKeysAndObjectsUsingBlock:^(id field, id value, BOOL * __unused stop) {
+//        if (![request valueForHTTPHeaderField:field]) {
+//            [mutableRequest setValue:value forHTTPHeaderField:field];
+//        }
+//    }];
+//    
+//    if (!parameters) {
+//        return mutableRequest;
+//    }
+//
+//    NSString *charset = (__bridge NSString *)CFStringConvertEncodingToIANACharSetName(CFStringConvertNSStringEncodingToEncoding(NSUTF8StringEncoding));
+//
+//    [mutableRequest setValue:[NSString stringWithFormat:@"application/json; charset=%@", charset] forHTTPHeaderField:@"Content-Type"];
+//    [mutableRequest setHTTPBody:[NSJSONSerialization dataWithJSONObject:parameters options:self.writingOptions error:error]];
+//
+//    return mutableRequest;
     
-    if (!parameters) {
-        return mutableRequest;
-    }
-
-    NSString *charset = (__bridge NSString *)CFStringConvertEncodingToIANACharSetName(CFStringConvertNSStringEncodingToEncoding(NSUTF8StringEncoding));
-
-    [mutableRequest setValue:[NSString stringWithFormat:@"application/json; charset=%@", charset] forHTTPHeaderField:@"Content-Type"];
-    [mutableRequest setHTTPBody:[NSJSONSerialization dataWithJSONObject:parameters options:self.writingOptions error:error]];
-
-    return mutableRequest;
+    NSLog(@"Figure out JSON request");
+    
+    return nil;
 }
 
 @end
@@ -1075,30 +1157,35 @@ typedef enum {
 
 #pragma mark - AFURLRequestSerializer
 
-- (NSURLRequest *)requestBySerializingRequest:(NSURLRequest *)request
-                               withParameters:(NSDictionary *)parameters
-                                        error:(NSError *__autoreleasing *)error
+- (RBKSocketOperation *)requestBySerializingRequest:(RBKSocketOperation *)request
+                                     withParameters:(NSDictionary *)parameters
+                                              error:(NSError *__autoreleasing *)error
 {
     NSParameterAssert(request);
 
-    if ([self.HTTPMethodsEncodingParametersInURI containsObject:[[request HTTPMethod] uppercaseString]]) {
-        return [super requestBySerializingRequest:request withParameters:parameters error:error];
-    }
-
-    NSMutableURLRequest *mutableRequest = [request mutableCopy];
-
-    [self.HTTPRequestHeaders enumerateKeysAndObjectsUsingBlock:^(id field, id value, BOOL * __unused stop) {
-        if (![request valueForHTTPHeaderField:field]) {
-            [mutableRequest setValue:value forHTTPHeaderField:field];
-        }
-    }];
-
-    NSString *charset = (__bridge NSString *)CFStringConvertEncodingToIANACharSetName(CFStringConvertNSStringEncodingToEncoding(NSUTF8StringEncoding));
-
-    [mutableRequest setValue:[NSString stringWithFormat:@"application/x-plist; charset=%@", charset] forHTTPHeaderField:@"Content-Type"];
-    [mutableRequest setHTTPBody:[NSPropertyListSerialization dataWithPropertyList:parameters format:self.format options:self.writeOptions error:error]];
-
-    return mutableRequest;
+//    if ([self.HTTPMethodsEncodingParametersInURI containsObject:[[request HTTPMethod] uppercaseString]]) {
+//        return [super requestBySerializingRequest:request withParameters:parameters error:error];
+//    }
+//
+//    NSMutableURLRequest *mutableRequest = [request mutableCopy];
+//
+//    [self.HTTPRequestHeaders enumerateKeysAndObjectsUsingBlock:^(id field, id value, BOOL * __unused stop) {
+//        if (![request valueForHTTPHeaderField:field]) {
+//            [mutableRequest setValue:value forHTTPHeaderField:field];
+//        }
+//    }];
+//
+//    NSString *charset = (__bridge NSString *)CFStringConvertEncodingToIANACharSetName(CFStringConvertNSStringEncodingToEncoding(NSUTF8StringEncoding));
+//
+//    [mutableRequest setValue:[NSString stringWithFormat:@"application/x-plist; charset=%@", charset] forHTTPHeaderField:@"Content-Type"];
+//    [mutableRequest setHTTPBody:[NSPropertyListSerialization dataWithPropertyList:parameters format:self.format options:self.writeOptions error:error]];
+//
+//    return mutableRequest;
+    
+    
+    NSLog(@"Figure out plist serializer");
+    
+    return nil;
 }
 
 #pragma mark - NSCoding
@@ -1130,6 +1217,64 @@ typedef enum {
     serializer.writeOptions = self.writeOptions;
 
     return serializer;
+}
+
+@end
+
+
+
+
+
+#pragma mark -
+
+@implementation RBKSocketSTOMPRequestSerializer
+
++ (instancetype)serializer {
+    return [self serializerWithWritingOptions:0];
+}
+
++ (instancetype)serializerWithWritingOptions:(NSUInteger)writingOptions
+{
+    RBKSocketSTOMPRequestSerializer *serializer = [[self alloc] init];
+    serializer.writingOptions = writingOptions;
+    
+    return serializer;
+}
+
+#pragma mark - AFURLRequestSerialization
+
+- (RBKSocketOperation *)requestBySerializingRequest:(RBKSocketOperation *)request
+                                     withParameters:(NSDictionary *)parameters
+                                              error:(NSError *__autoreleasing *)error
+{
+    NSParameterAssert(request);
+    
+//    if ([self.HTTPMethodsEncodingParametersInURI containsObject:[[request HTTPMethod] uppercaseString]]) {
+//        return [super requestBySerializingRequest:request withParameters:parameters error:error];
+//    }
+//    
+//    NSMutableURLRequest *mutableRequest = [request mutableCopy];
+//    
+//    [self.HTTPRequestHeaders enumerateKeysAndObjectsUsingBlock:^(id field, id value, BOOL * __unused stop) {
+//        if (![request valueForHTTPHeaderField:field]) {
+//            [mutableRequest setValue:value forHTTPHeaderField:field];
+//        }
+//    }];
+//    
+//    if (!parameters) {
+//        return mutableRequest;
+//    }
+//    
+//    NSString *charset = (__bridge NSString *)CFStringConvertEncodingToIANACharSetName(CFStringConvertNSStringEncodingToEncoding(NSUTF8StringEncoding));
+//    
+//    [mutableRequest setValue:[NSString stringWithFormat:@"application/json; charset=%@", charset] forHTTPHeaderField:@"Content-Type"];
+//    [mutableRequest setHTTPBody:[NSJSONSerialization dataWithJSONObject:parameters options:self.writingOptions error:error]];
+//    
+//    return mutableRequest;
+    
+    NSLog(@"Figure out STOMP serializer");
+    
+    return nil;
 }
 
 @end

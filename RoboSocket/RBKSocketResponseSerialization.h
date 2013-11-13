@@ -75,10 +75,6 @@
  */
 @property (nonatomic, strong) NSIndexSet *acceptableStatusCodes;
 
-/**
- The acceptable MIME types for responses. When non-`nil`, responses with a `Content-Type` with MIME types that do not intersect with the set will result in an error during validation.
- */
-@property (nonatomic, strong) NSSet *acceptableContentTypes;
 
 /**
  Validates the specified response and data.
@@ -101,13 +97,48 @@
 
 
 /**
- `AFJSONSerializer` is a subclass of `AFHTTPResponseSerializer` that validates and decodes JSON responses.
+ `RBKSocketStringResponseSerializer` is a subclass of `AFHTTPResponseSerializer` that validates and decodes NSString responses.
+ */
+@interface RBKSocketStringResponseSerializer : RBKSocketResponseSerializer
 
- By default, `AFJSONSerializer` accepts the following MIME types, which includes the official standard, `application/json`, as well as other commonly-used types:
+/**
+ Options for reading the response NSString data and creating the Foundation objects.
+ */
+@property (nonatomic, assign) NSUInteger readingOptions;
 
- - `application/json`
- - `text/json`
- - `text/javascript`
+/**
+ Creates and returns a NSString serializer with specified reading and writing options.
+ 
+ @param readingOptions The specified string reading options. `0` by default.
+ */
++ (instancetype)serializerWithReadingOptions:(NSUInteger)readingOptions;
+
+@end
+
+/**
+ `RBKSocketDataResponseSerializer` is a subclass of `AFHTTPResponseSerializer` that validates and decodes NSData responses.
+ */
+@interface RBKSocketDataResponseSerializer : RBKSocketResponseSerializer
+
+/**
+ Options for reading the response NSData data and creating the Foundation objects.
+ */
+@property (nonatomic, assign) NSInteger readingOptions;
+
+/**
+ Creates and returns a NSData serializer with specified reading and writing options.
+ 
+ @param readingOptions The specified string reading options. `0` by default.
+ */
++ (instancetype)serializerWithReadingOptions:(NSUInteger)readingOptions;
+
+@end
+
+
+
+/**
+ `RBKSocketJSONResponseSerializer` is a subclass of `AFHTTPResponseSerializer` that validates and decodes JSON responses.
+
  */
 @interface RBKSocketJSONResponseSerializer : RBKSocketResponseSerializer
 
@@ -255,3 +286,32 @@
 + (instancetype)compoundSerializerWithResponseSerializers:(NSArray *)responseSerializers;
 
 @end
+
+
+#pragma mark -
+
+/**
+ `RBKSocketSTOMPResponseSerializer` is a subclass of `RBKSocketResponseSerializer` that validates and decodes STOMP responses.
+ 
+ */
+@interface RBKSocketSTOMPResponseSerializer : RBKSocketResponseSerializer
+
+/**
+ The property list format. Possible values are described in "NSPropertyListFormat".
+ */
+@property (nonatomic, assign) NSPropertyListFormat format;
+
+/**
+ The STOMP reading options.
+ */
+@property (nonatomic, assign) NSUInteger readingOptions;
+
+/**
+ Creates and returns a STOMP serializer with specified reading and writing options.
+ 
+ @param readingOptions The specified string reading options. `0` by default.
+ */
++ (instancetype)serializerWithReadingOptions:(NSUInteger)readingOptions;
+
+@end
+

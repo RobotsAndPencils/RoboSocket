@@ -25,6 +25,8 @@
 #import <UIKit/UIKit.h>
 #endif
 
+@class RBKSocketOperation;
+
 /**
  The `AFURLRequestSerialization` protocol is adopted by an object that encodes parameters for a specified HTTP requests. Request serializers may encode parameters as query strings, HTTP bodies, setting the appropriate HTTP header fields as necessary.
 
@@ -41,9 +43,9 @@
 
  @return A serialized request.
  */
-- (NSURLRequest *)requestBySerializingRequest:(NSURLRequest *)request
-                               withParameters:(NSDictionary *)parameters
-                                        error:(NSError *__autoreleasing *)error;
+- (RBKSocketOperation *)requestBySerializingRequest:(RBKSocketOperation *)request
+                                     withParameters:(NSDictionary *)parameters
+                                              error:(NSError *__autoreleasing *)error;
 
 @end
 
@@ -144,36 +146,12 @@ typedef NS_ENUM(NSUInteger, RBKSocketRequestQueryStringSerializationStyle) {
 ///-------------------------------
 
 /**
- Creates an `NSMutableURLRequest` object with the specified HTTP method and URL string.
-
- If the HTTP method is `GET`, `HEAD`, or `DELETE`, the parameters will be used to construct a url-encoded query string that is appended to the request's URL. Otherwise, the parameters will be encoded according to the value of the `parameterEncoding` property, and set as the request body.
-
- @param method The HTTP method for the request, such as `GET`, `POST`, `PUT`, or `DELETE`. This parameter must not be `nil`.
- @param URLString The URL string used to create the request URL.
- @param parameters The parameters to be either set as a query string for `GET` requests, or the request HTTP body.
-
- @return An `NSMutableURLRequest` object.
+ Creates `RBKSocketOperation` 
+ 
+ @param message The message to be sent within a websocket frame
  */
-- (NSMutableURLRequest *)requestWithMethod:(NSString *)method
-                                 URLString:(NSString *)URLString
-                                parameters:(NSDictionary *)parameters;
+- (RBKSocketOperation *)requestOperationWithMessage:(id)message;
 
-/**
- Creates an `NSMutableURLRequest` object with the specified HTTP method and URLString, and constructs a `multipart/form-data` HTTP body, using the specified parameters and multipart form data block. See http://www.w3.org/TR/html4/interact/forms.html#h-17.13.4.2
-
- Multipart form requests are automatically streamed, reading files directly from disk along with in-memory data in a single HTTP body. The resulting `NSMutableURLRequest` object has an `HTTPBodyStream` property, so refrain from setting `HTTPBodyStream` or `HTTPBody` on this request object, as it will clear out the multipart form body stream.
-
- @param method The HTTP method for the request. This parameter must not be `GET` or `HEAD`, or `nil`.
- @param URLString The URL string used to create the request URL.
- @param parameters The parameters to be encoded and set in the request HTTP body.
- @param block A block that takes a single argument and appends data to the HTTP body. The block argument is an object adopting the `AFMultipartFormData` protocol.
-
- @return An `NSMutableURLRequest` object
- */
-- (NSMutableURLRequest *)multipartFormRequestWithMethod:(NSString *)method
-                                              URLString:(NSString *)URLString
-                                             parameters:(NSDictionary *)parameters
-                              constructingBodyWithBlock:(void (^)(id <RBKSocketMultipartFormData> formData))block;
 
 @end
 
@@ -298,6 +276,49 @@ extern NSTimeInterval const kAFUploadStream3GSuggestedDelay;
 
 #pragma mark -
 
+@interface RBKSocketStringRequestSerializer : RBKSocketRequestSerializer
+
+/**
+ The property list format. Possible values are described in "NSPropertyListFormat".
+ */
+@property (nonatomic, assign) NSPropertyListFormat format;
+
+/**
+ Options for writing the request JSON data from Foundation objects. For possible values, see the `NSJSONSerialization` documentation section "NSJSONWritingOptions". `0` by default.
+ */
+@property (nonatomic, assign) NSInteger writingOptions;
+
+/**
+ Creates and returns a string serializer with specified reading and writing options.
+ 
+ @param writingOptions The specified string writing options.
+ */
++ (instancetype)serializerWithWritingOptions:(NSUInteger)writingOptions;
+
+@end
+
+@interface RBKSocketDataRequestSerializer : RBKSocketRequestSerializer
+
+/**
+ The property list format. Possible values are described in "NSPropertyListFormat".
+ */
+@property (nonatomic, assign) NSPropertyListFormat format;
+
+/**
+ Options for writing the request JSON data from Foundation objects. For possible values, see the `NSJSONSerialization` documentation section "NSJSONWritingOptions". `0` by default.
+ */
+@property (nonatomic, assign) NSInteger writingOptions;
+
+/**
+ Creates and returns a string serializer with specified reading and writing options.
+ 
+ @param writingOptions The specified string writing options.
+ */
++ (instancetype)serializerWithWritingOptions:(NSUInteger)writingOptions;
+
+@end
+
+
 @interface RBKSocketJSONRequestSerializer : RBKSocketRequestSerializer
 
 /**
@@ -341,5 +362,27 @@ extern NSTimeInterval const kAFUploadStream3GSuggestedDelay;
  */
 + (instancetype)serializerWithFormat:(NSPropertyListFormat)format
                         writeOptions:(NSPropertyListWriteOptions)writeOptions;
+
+@end
+
+@interface RBKSocketSTOMPRequestSerializer : RBKSocketRequestSerializer
+
+/**
+ The property list format. Possible values are described in "NSPropertyListFormat".
+ */
+@property (nonatomic, assign) NSPropertyListFormat format;
+
+///**
+// Options for writing the request STOMP data from Foundation objects.
+// */
+@property (nonatomic, assign) NSUInteger writingOptions;
+
+/**
+ Creates and returns a STOMP serializer with specified reading and writing options.
+ 
+ @param writingOptions The specified STOMP writing options.
+ */
++ (instancetype)serializerWithWritingOptions:(NSUInteger)writingOptions;
+
 
 @end

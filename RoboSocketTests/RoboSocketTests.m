@@ -51,7 +51,7 @@ NSString * const hostURL = @"ws://localhost";
     [super tearDown];
 }
 
-- (void)testSocketEcho {
+- (void)testSocketEchoString {
     
     __block BOOL success = NO;
     NSString *sentMessage = @"Hello, World!";
@@ -65,6 +65,22 @@ NSString * const hostURL = @"ws://localhost";
     expect(success).will.beTruthy();
     expect(responseMessage).will.equal(sentMessage);
 }
+
+- (void)testSocketEchoData {
+    
+    __block BOOL success = NO;
+    NSData *sentMessage = [@"Hello, World!" dataUsingEncoding:NSUTF8StringEncoding];
+    __block NSData *responseMessage = nil;
+    [self.socketManager sendSocketOperationWithMessage:sentMessage success:^(RBKSocketOperation *operation, id responseObject) {
+        success = YES;
+        responseMessage = responseObject;
+    } failure:^(RBKSocketOperation *operation, NSError *error) {
+        success = NO;
+    }];
+    expect(success).will.beTruthy();
+    expect(responseMessage).will.equal(sentMessage);
+}
+
 
 #pragma mark - Private
 

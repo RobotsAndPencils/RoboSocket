@@ -95,7 +95,7 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
 
 @property (readwrite, nonatomic, assign) RBKSocketOperationState state;
 @property (readwrite, nonatomic, assign, getter = isCancelled) BOOL cancelled;
-@property (readwrite, nonatomic, strong) NSString *message;
+@property (readwrite, nonatomic, strong) id requestMessage;
 @property (readwrite, nonatomic, strong) id response;
 @property (readwrite, nonatomic, strong) id responseObject;
 
@@ -145,7 +145,7 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
     
     self.runLoopModes = [NSSet setWithObject:NSRunLoopCommonModes];
     
-    self.message = message;
+    self.requestMessage = message;
     
     // self.shouldUseCredentialStorage = YES;
     
@@ -272,7 +272,7 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
         // NSLog(@"start socket operation");
         
         self.socket.messageDelegate = self;
-        [self.socket sendMessage:self.message];
+        [self.socket sendMessage:self.requestMessage];
         
     }
     [self.lock unlock];
