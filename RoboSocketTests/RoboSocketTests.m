@@ -23,7 +23,7 @@ NSString * const hostURL = @"ws://localhost";
 @property (strong, nonatomic) RBKSocketManager *socketManager;
 @property (strong, nonatomic) SRServerSocket *stubSocket;
 
-@property (assign, nonatomic, getter = isFinished) BOOL finished;
+@property (assign, nonatomic, getter = isFinished) BOOL socketOpen;
 
 @end
 
@@ -34,7 +34,7 @@ NSString * const hostURL = @"ws://localhost";
     // Put setup code here. This method is called before the invocation of each test method in the class.
     [Expecta setAsynchronousTestTimeout:300.0];
 
-    self.finished = NO;
+    self.socketOpen = NO;
     self.stubSocket = [[SRServerSocket alloc] initWithURL:[NSURL URLWithString:hostURL]];
     self.stubSocket.delegate = self;
 
@@ -48,6 +48,11 @@ NSString * const hostURL = @"ws://localhost";
 
 - (void)tearDown {
     // Put teardown code here. This method is called after the invocation of each test method in the class.
+    
+    [self.stubSocket close];
+    
+    while (self.socketOpen && [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.1]]); // don't advance until the socket has closed completely
+
     [super tearDown];
 }
 
@@ -69,7 +74,8 @@ NSString * const hostURL = @"ws://localhost";
 - (void)testSocketEchoData {
     
     __block BOOL success = NO;
-    NSData *sentMessage = [@"Hello, World!" dataUsingEncoding:NSUTF8StringEncoding];
+    NSString *stringMessage = @"Hello, World!";
+    NSData *sentMessage = [stringMessage dataUsingEncoding:NSUTF8StringEncoding];
     __block NSData *responseMessage = nil;
     [self.socketManager sendSocketOperationWithMessage:sentMessage success:^(RBKSocketOperation *operation, id responseObject) {
         success = YES;
@@ -78,7 +84,8 @@ NSString * const hostURL = @"ws://localhost";
         success = NO;
     }];
     expect(success).will.beTruthy();
-    expect(responseMessage).will.equal(sentMessage);
+    expect(responseMessage).willNot.equal(sentMessage); // using string serializers, we can feed it data, it gets converted to string, and we get a string response
+    expect(responseMessage).will.equal(stringMessage);
 }
 
 
@@ -95,14 +102,21 @@ NSString * const hostURL = @"ws://localhost";
 
 - (void)webSocketDidOpen:(SRWebSocket *)webSocket; {
     NSLog(@"Opened stub socket");
-    self.finished = YES;
+    self.socketOpen = YES;
 }
 
 
 - (void)webSocket:(SRWebSocket *)webSocket didFailWithError:(NSError *)error {
     NSLog(@"failed");
     
-    self.finished = YES;
+    self.socketOpen = NO;
+}
+
+- (void)webSocket:(SRWebSocket *)webSocket didCloseWithCode:(NSInteger)code reason:(NSString *)reason wasClean:(BOOL)wasClean {
+    NSLog(@"closed");
+
+    self.socketOpen = NO;
+
 }
 
 
