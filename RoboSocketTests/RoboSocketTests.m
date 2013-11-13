@@ -12,6 +12,9 @@
 #import <Expecta/Expecta.h>
 
 #import "RBKSocketManager.h"
+#import "RBKSocketRequestSerialization.h"
+#import "RBKSocketResponseSerialization.h"
+
 #import <SocketRocket/SRServerSocket.h>
 #import <SocketRocket/SRWebSocket.h>
 
@@ -71,7 +74,7 @@ NSString * const hostURL = @"ws://localhost";
     expect(responseMessage).will.equal(sentMessage);
 }
 
-- (void)testSocketEchoData {
+- (void)testSocketEchoDataToString {
     
     __block BOOL success = NO;
     NSString *stringMessage = @"Hello, World!";
@@ -86,6 +89,46 @@ NSString * const hostURL = @"ws://localhost";
     expect(success).will.beTruthy();
     expect(responseMessage).willNot.equal(sentMessage); // using string serializers, we can feed it data, it gets converted to string, and we get a string response
     expect(responseMessage).will.equal(stringMessage);
+}
+
+- (void)testSocketEchoData {
+    
+    self.socketManager.requestSerializer = [RBKSocketDataRequestSerializer serializer];
+    self.socketManager.responseSerializer = [RBKSocketDataResponseSerializer serializer];
+    
+    __block BOOL success = NO;
+    NSString *stringMessage = @"Hello, World!";
+    NSData *sentMessage = [stringMessage dataUsingEncoding:NSUTF8StringEncoding];
+    __block NSData *responseMessage = nil;
+    [self.socketManager sendSocketOperationWithMessage:sentMessage success:^(RBKSocketOperation *operation, id responseObject) {
+        success = YES;
+        responseMessage = responseObject;
+    } failure:^(RBKSocketOperation *operation, NSError *error) {
+        success = NO;
+    }];
+    expect(success).will.beTruthy();
+    expect(responseMessage).will.equal(sentMessage); // using data serializers, we can feed it data, and we get a data response
+    expect(responseMessage).willNot.equal(stringMessage);
+}
+
+- (void)testSocketEchoStringToData {
+    
+    self.socketManager.requestSerializer = [RBKSocketDataRequestSerializer serializer];
+    self.socketManager.responseSerializer = [RBKSocketDataResponseSerializer serializer];
+    
+    __block BOOL success = NO;
+    NSString *sentMessage = @"Hello, World!";
+    NSData *dataMessage = [sentMessage dataUsingEncoding:NSUTF8StringEncoding];
+    __block NSData *responseMessage = nil;
+    [self.socketManager sendSocketOperationWithMessage:sentMessage success:^(RBKSocketOperation *operation, id responseObject) {
+        success = YES;
+        responseMessage = responseObject;
+    } failure:^(RBKSocketOperation *operation, NSError *error) {
+        success = NO;
+    }];
+    expect(success).will.beTruthy();
+    expect(responseMessage).will.equal(dataMessage); // using data serializers, we can feed it data, and we get a data response
+    expect(responseMessage).willNot.equal(sentMessage);
 }
 
 

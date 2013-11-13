@@ -1039,42 +1039,23 @@ typedef enum {
 {
     NSParameterAssert(request);
     
-//    if ([self.HTTPMethodsEncodingParametersInURI containsObject:[[request HTTPMethod] uppercaseString]]) {
-//        return [super requestBySerializingRequest:request withParameters:parameters error:error];
-//    }
-//    
-//    NSMutableURLRequest *mutableRequest = [request mutableCopy];
-//    
-//    [self.HTTPRequestHeaders enumerateKeysAndObjectsUsingBlock:^(id field, id value, BOOL * __unused stop) {
-//        if (![request valueForHTTPHeaderField:field]) {
-//            [mutableRequest setValue:value forHTTPHeaderField:field];
-//        }
-//    }];
-//    
-//    if (!parameters) {
-//        return mutableRequest;
-//    }
-//    
-//    NSString *charset = (__bridge NSString *)CFStringConvertEncodingToIANACharSetName(CFStringConvertNSStringEncodingToEncoding(NSUTF8StringEncoding));
-//    
-//    [mutableRequest setValue:[NSString stringWithFormat:@"application/json; charset=%@", charset] forHTTPHeaderField:@"Content-Type"];
-//    [mutableRequest setHTTPBody:[NSJSONSerialization dataWithJSONObject:parameters options:self.writingOptions error:error]];
+    id message = request.requestMessage;
     
-    NSLog(@"Figure out request");
+    if ([message isKindOfClass:[NSData class]]) {
+        return request;
+    }
     
-    return nil; //mutableRequest;
+    if ([message isKindOfClass:[NSString class]]) {
+        NSData *messageAsData = [message dataUsingEncoding:NSUTF8StringEncoding];
+        return [[RBKSocketOperation alloc] initWithRequestMessage:messageAsData];
+    }
+    
+    // not sure how to (or if we should) coerce other formats into a string
+    NSLog(@"Unsupported request message type %@ for serialization as a string", NSStringFromClass([message class]));
+    return nil;
 }
 
 @end
-
-
-
-
-
-
-
-
-
 
 
 
