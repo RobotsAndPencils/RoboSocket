@@ -96,12 +96,13 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
 @property (readwrite, nonatomic, assign) RBKSocketOperationState state;
 @property (readwrite, nonatomic, assign, getter = isCancelled) BOOL cancelled;
 @property (readwrite, nonatomic, strong) id requestMessage;
-@property (readwrite, nonatomic, strong) id response;
+@property (readwrite, nonatomic, strong) id response; // need to deprecate this?
 @property (readwrite, nonatomic, strong) id responseObject;
 
 @property (readwrite, nonatomic, strong) NSError *error;
-@property (readwrite, nonatomic, strong) NSData *responseData;
-@property (readwrite, nonatomic, copy) NSString *responseString;
+@property (readwrite, nonatomic, strong) NSData *responseData; // deprecate?
+@property (readwrite, nonatomic, copy) id responseMessage;
+@property (readwrite, nonatomic, copy) NSString *responseString; // deprecate?
 
 @property (readwrite, nonatomic, strong) NSError *responseSerializationError;
 @property (readwrite, nonatomic, strong) NSRecursiveLock *lock;
@@ -160,9 +161,7 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
     [self.lock lock];
     if (!_responseObject && [self isFinished] && !self.error) {
         NSError *error = nil;
-        // self.responseObject = [self.responseSerializer responseObjectForResponse:self.response data:self.responseData error:&error];
-        // if we need to support a response format then use this mechanism ^
-        self.responseObject = self.responseString;
+        self.responseObject = [self.responseSerializer responseObjectForResponseMessage:self.responseMessage error:&error];
         if (error) {
             self.responseSerializationError = error;
         }
@@ -330,7 +329,7 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
 // or NSData if the server is using binary.
 - (void)webSocket:(RoboSocket *)webSocket didReceiveMessage:(id)message {
     NSLog(@"received Message");
-    self.responseString = message; // if this message is a string, if its data use self.responseData
+    self.responseMessage = message;
     
     [self finish];
     

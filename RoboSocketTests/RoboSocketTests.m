@@ -132,6 +132,24 @@ NSString * const hostURL = @"ws://localhost";
 }
 
 
+- (void)testSocketEchoJSON {
+    
+    self.socketManager.requestSerializer = [RBKSocketJSONRequestSerializer serializer];
+    self.socketManager.responseSerializer = [RBKSocketJSONResponseSerializer serializer];
+    
+    __block BOOL success = NO;
+    NSDictionary *sentMessage = @{@"key": @"value"};
+    __block NSDictionary *responseMessage = nil;
+    [self.socketManager sendSocketOperationWithMessage:sentMessage success:^(RBKSocketOperation *operation, id responseObject) {
+        success = YES;
+        responseMessage = responseObject;
+    } failure:^(RBKSocketOperation *operation, NSError *error) {
+        success = NO;
+    }];
+    expect(success).will.beTruthy();
+    expect(responseMessage).will.equal(sentMessage); // using JSON serializers, we can feed it JSON, and we get a JSON response
+}
+
 #pragma mark - Private
 
 #pragma mark - SRWebSocketDelegate

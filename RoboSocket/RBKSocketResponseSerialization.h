@@ -39,9 +39,8 @@
 
  @return The object decoded from the specified response data.
  */
-- (id)responseObjectForResponse:(NSURLResponse *)response
-                           data:(NSData *)data
-                          error:(NSError *__autoreleasing *)error;
+- (id)responseObjectForResponseMessage:(id)responseMessage
+                                 error:(NSError *__autoreleasing *)error;
 
 @end
 
@@ -231,62 +230,6 @@
                          readOptions:(NSPropertyListReadOptions)readOptions;
 
 @end
-
-#pragma mark -
-
-/**
- `AFImageSerializer` is a subclass of `AFHTTPResponseSerializer` that validates and decodes image responses.
-
- By default, `AFImageSerializer` accepts the following MIME types, which correspond to the image formats supported by UIImage or NSImage:
-
- - `image/tiff`
- - `image/jpeg`
- - `image/gif`
- - `image/png`
- - `image/ico`
- - `image/x-icon`
- - `image/bmp`
- - `image/x-bmp`
- - `image/x-xbitmap`
- - `image/x-win-bitmap`
- */
-@interface RBKSocketImageResponseSerializer : RBKSocketResponseSerializer
-
-#if defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
-/**
- The scale factor used when interpreting the image data to construct `responseImage`. Specifying a scale factor of 1.0 results in an image whose size matches the pixel-based dimensions of the image. Applying a different scale factor changes the size of the image as reported by the size property. This is set to the value of scale of the main screen by default, which automatically scales images for retina displays, for instance.
- */
-@property (nonatomic, assign) CGFloat imageScale;
-
-/**
- Whether to automatically inflate response image data for compressed formats (such as PNG or JPEG). Enabling this can significantly improve drawing performance on iOS when used with `setCompletionBlockWithSuccess:failure:`, as it allows a bitmap representation to be constructed in the background rather than on the main thread. `YES` by default.
- */
-@property (nonatomic, assign) BOOL automaticallyInflatesResponseImage;
-#endif
-
-@end
-
-#pragma mark -
-
-/**
- `AFCompoundSerializer` is a subclass of `AFHTTPResponseSerializer` that delegates the response serialization to the first `AFHTTPResponseSerializer` object that returns `YES` to `validateResponse:data:error:`, falling back on the default behavior of `AFHTTPResponseSerializer`. This is useful for supporting multiple potential types and structures of server responses with a single serializer.
- */
-@interface RBKSocketCompoundResponseSerializer : RBKSocketResponseSerializer
-
-/**
- The component response serializers.
- */
-@property (readonly, nonatomic, strong) NSArray *responseSerializers;
-
-/**
- Creates and returns a compound serializer comprised of the specified response serializers.
-
- @warning Each response serializer specified must be a subclass of `AFHTTPResponseSerializer`, and response to `-validateResponse:data:error:`.
- */
-+ (instancetype)compoundSerializerWithResponseSerializers:(NSArray *)responseSerializers;
-
-@end
-
 
 #pragma mark -
 

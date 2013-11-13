@@ -117,7 +117,6 @@
 		716DACB1180F7C4200D3779F /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
 		8B10DF9629234C73ABAEC8D8 /* libPods-RoboSocket.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-RoboSocket.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		92B55252026D4DA1939B9CE7 /* Pods-RoboSocket.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RoboSocket.xcconfig"; path = "Pods/Pods-RoboSocket.xcconfig"; sourceTree = "<group>"; };
-		B81ED2B89B1B1B24906A490C /* Podfile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; path = Podfile; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		CE9CA189B6854A708F61D20D /* libPods-RoboSocketTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-RoboSocketTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -181,7 +180,6 @@
 				4F50DB12180EE6530035BE77 /* RoboSocketExampleTests */,
 				4F50DAE9180EE6530035BE77 /* Frameworks */,
 				4F50DAE8180EE6530035BE77 /* Products */,
-				B81ED2B89B1B1B24906A490C /* Podfile */,
 				92B55252026D4DA1939B9CE7 /* Pods-RoboSocket.xcconfig */,
 				0741FCACF876427B9BE1C41A /* Pods-RoboSocketTests.xcconfig */,
 			);

@@ -108,14 +108,14 @@ static NSString * AFPercentEscapedQueryStringValueFromStringWithEncoding(NSStrin
 extern NSArray * AFQueryStringPairsFromDictionary(NSDictionary *dictionary);
 extern NSArray * AFQueryStringPairsFromKeyAndValue(NSString *key, id value);
 
-static NSString * AFQueryStringFromParametersWithEncoding(NSDictionary *parameters, NSStringEncoding stringEncoding) {
-    NSMutableArray *mutablePairs = [NSMutableArray array];
-    for (AFQueryStringPair *pair in AFQueryStringPairsFromDictionary(parameters)) {
-        [mutablePairs addObject:[pair URLEncodedStringValueWithEncoding:stringEncoding]];
-    }
-
-    return [mutablePairs componentsJoinedByString:@"&"];
-}
+//static NSString * AFQueryStringFromParametersWithEncoding(NSDictionary *parameters, NSStringEncoding stringEncoding) {
+//    NSMutableArray *mutablePairs = [NSMutableArray array];
+//    for (AFQueryStringPair *pair in AFQueryStringPairsFromDictionary(parameters)) {
+//        [mutablePairs addObject:[pair URLEncodedStringValueWithEncoding:stringEncoding]];
+//    }
+//
+//    return [mutablePairs componentsJoinedByString:@"&"];
+//}
 
 NSArray * AFQueryStringPairsFromDictionary(NSDictionary *dictionary) {
     return AFQueryStringPairsFromKeyAndValue(nil, dictionary);
@@ -1051,7 +1051,7 @@ typedef enum {
     }
     
     // not sure how to (or if we should) coerce other formats into a string
-    NSLog(@"Unsupported request message type %@ for serialization as a string", NSStringFromClass([message class]));
+    NSLog(@"Unsupported request message type %@ for serialization as data", NSStringFromClass([message class]));
     return nil;
 }
 
@@ -1088,32 +1088,16 @@ typedef enum {
 {
     NSParameterAssert(request);
 
-//    if ([self.HTTPMethodsEncodingParametersInURI containsObject:[[request HTTPMethod] uppercaseString]]) {
-//        return [super requestBySerializingRequest:request withParameters:parameters error:error];
-//    }
-//
-//    NSMutableURLRequest *mutableRequest = [request mutableCopy];
-//
-//    [self.HTTPRequestHeaders enumerateKeysAndObjectsUsingBlock:^(id field, id value, BOOL * __unused stop) {
-//        if (![request valueForHTTPHeaderField:field]) {
-//            [mutableRequest setValue:value forHTTPHeaderField:field];
-//        }
-//    }];
-//    
-//    if (!parameters) {
-//        return mutableRequest;
-//    }
-//
-//    NSString *charset = (__bridge NSString *)CFStringConvertEncodingToIANACharSetName(CFStringConvertNSStringEncodingToEncoding(NSUTF8StringEncoding));
-//
-//    [mutableRequest setValue:[NSString stringWithFormat:@"application/json; charset=%@", charset] forHTTPHeaderField:@"Content-Type"];
-//    [mutableRequest setHTTPBody:[NSJSONSerialization dataWithJSONObject:parameters options:self.writingOptions error:error]];
-//
-//    return mutableRequest;
+    id message = request.requestMessage;
     
-    NSLog(@"Figure out JSON request");
-    
-    return nil;
+    if (![message isKindOfClass:[NSDictionary class]]) {
+        // not sure how to (or if we should) coerce other formats into a JSON
+        NSLog(@"Unsupported request message type %@ for serialization as JSON", NSStringFromClass([message class]));
+        return nil;
+    }
+
+    NSData *messageAsJSONData = [NSJSONSerialization dataWithJSONObject:message options:self.writingOptions error:error];
+    return [[RBKSocketOperation alloc] initWithRequestMessage:messageAsJSONData];
 }
 
 @end

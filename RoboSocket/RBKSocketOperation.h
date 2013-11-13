@@ -65,7 +65,7 @@
 /**
  The string representation of the response data.
  */
-@property (readonly, nonatomic, copy) NSString *responseString;
+@property (readonly, nonatomic, copy) id responseMessage;
 
 /**
  The string encoding of the response.

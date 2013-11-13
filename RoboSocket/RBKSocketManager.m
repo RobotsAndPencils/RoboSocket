@@ -76,6 +76,16 @@
                                                success:(void (^)(RBKSocketOperation *operation, id responseObject))success
                                                failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure {
     RBKSocketOperation *operation = [self socketOperationWithMessage:message success:success failure:failure];
+    
+    if (!operation) {
+        NSLog(@"Failed to create a socket operation");
+        NSError *error = [NSError errorWithDomain:@"com.robotsandpencils.robosocket" code:-1 userInfo:nil];
+        if (failure) {
+            failure(nil, error);
+        }
+        return nil;
+    }
+    
     if (self.socketIsOpen) {
         [self.operationQueue addOperation:operation]; // can't send until the socket is opened
     } else {

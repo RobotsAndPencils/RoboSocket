@@ -85,20 +85,19 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
 //        }
 //    }
 
-    NSLog(@"DWA: Need to validate the response");
+//    NSLog(@"DWA: Need to validate the response ?");
     
     return YES;
 }
 
 #pragma mark - RBKSocketResponseSerialization
 
-- (id)responseObjectForResponse:(NSURLResponse *)response
-                           data:(NSData *)data
-                          error:(NSError *__autoreleasing *)error
+- (id)responseObjectForResponseMessage:(id)responseMessage
+                                 error:(NSError *__autoreleasing *)error
 {
-    [self validateResponse:(NSHTTPURLResponse *)response data:data error:error];
+    [self validateResponse:nil data:responseMessage error:error];
 
-    return data;
+    return responseMessage;
 }
 
 #pragma mark - NSCoding
@@ -163,50 +162,30 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
 
 #pragma mark - RBKSocketRequestSerialization
 
-- (id)responseObjectForResponse:(NSURLResponse *)response
-                           data:(NSData *)data
-                          error:(NSError *__autoreleasing *)error
+- (id)responseObjectForResponseMessage:(id)responseMessage
+                                 error:(NSError *__autoreleasing *)error
 {
-    if (![self validateResponse:(NSHTTPURLResponse *)response data:data error:error]) {
+    if (![self validateResponse:nil data:responseMessage error:error]) {
         if ([(NSError *)(*error) code] == NSURLErrorCannotDecodeContentData) {
             return nil;
         }
     }
     
-//    // Workaround for behavior of Rails to return a single space for `head :ok` (a workaround for a bug in Safari), which is not interpreted as valid input by NSJSONSerialization.
-//    // See https://github.com/rails/rails/issues/1742
-//    NSStringEncoding stringEncoding = self.stringEncoding;
-//    if (response.textEncodingName) {
-//        CFStringEncoding encoding = CFStringConvertIANACharSetNameToEncoding((CFStringRef)response.textEncodingName);
-//        if (encoding != kCFStringEncodingInvalidId) {
-//            stringEncoding = CFStringConvertEncodingToNSStringEncoding(encoding);
-//        }
-//    }
-//    
-//    NSString *responseString = [[NSString alloc] initWithData:data encoding:stringEncoding];
-//    if (responseString && ![responseString isEqualToString:@" "]) {
-//        // Workaround for a bug in NSJSONSerialization when Unicode character escape codes are used instead of the actual character
-//        // See http://stackoverflow.com/a/12843465/157142
-//        data = [responseString dataUsingEncoding:NSUTF8StringEncoding];
-//        
-//        if (data) {
-//            if ([data length] > 0) {
-//                return [NSJSONSerialization JSONObjectWithData:data options:self.readingOptions error:error];
-//            } else {
-//                return nil;
-//            }
-//        } else {
-//            NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
-//            [userInfo setValue:NSLocalizedStringFromTable(@"Data failed decoding as a UTF-8 string", nil, @"AFNetworking") forKey:NSLocalizedDescriptionKey];
-//            [userInfo setValue:[NSString stringWithFormat:NSLocalizedStringFromTable(@"Could not decode string: %@", nil, @"AFNetworking"), responseString] forKey:NSLocalizedFailureReasonErrorKey];
-//            if (error) {
-//                *error = [[NSError alloc] initWithDomain:RBKSocketNetworkingErrorDomain code:NSURLErrorCannotDecodeContentData userInfo:userInfo];
-//            }
-//        }
-//    }
+    if (!responseMessage) {
+        NSLog(@"Did not receive response message");
+        return nil;
+    }
     
-    NSLog(@"DWA: need to create our response object");
+    if ([responseMessage isKindOfClass:[NSString class]]) {
+        return responseMessage;
+    }
+
+    if ([responseMessage isKindOfClass:[NSData class]]) {
+        NSString *responseString = [[NSString alloc] initWithData:responseMessage encoding:NSUTF8StringEncoding];
+        return responseString;
+    }
     
+    NSLog(@"Unsupported response message type %@ for serialization as string", NSStringFromClass([responseMessage class]));
     return nil;
 }
 
@@ -272,50 +251,34 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
 
 #pragma mark - RBKSocketRequestSerialization
 
-- (id)responseObjectForResponse:(NSURLResponse *)response
-                           data:(NSData *)data
-                          error:(NSError *__autoreleasing *)error
+- (id)responseObjectForResponseMessage:(id)responseMessage
+                                 error:(NSError *__autoreleasing *)error
 {
-    if (![self validateResponse:(NSHTTPURLResponse *)response data:data error:error]) {
+    if (![self validateResponse:nil data:responseMessage error:error]) {
         if ([(NSError *)(*error) code] == NSURLErrorCannotDecodeContentData) {
             return nil;
         }
     }
     
-    //    // Workaround for behavior of Rails to return a single space for `head :ok` (a workaround for a bug in Safari), which is not interpreted as valid input by NSJSONSerialization.
-    //    // See https://github.com/rails/rails/issues/1742
-    //    NSStringEncoding stringEncoding = self.stringEncoding;
-    //    if (response.textEncodingName) {
-    //        CFStringEncoding encoding = CFStringConvertIANACharSetNameToEncoding((CFStringRef)response.textEncodingName);
-    //        if (encoding != kCFStringEncodingInvalidId) {
-    //            stringEncoding = CFStringConvertEncodingToNSStringEncoding(encoding);
-    //        }
-    //    }
-    //
-    //    NSString *responseString = [[NSString alloc] initWithData:data encoding:stringEncoding];
-    //    if (responseString && ![responseString isEqualToString:@" "]) {
-    //        // Workaround for a bug in NSJSONSerialization when Unicode character escape codes are used instead of the actual character
-    //        // See http://stackoverflow.com/a/12843465/157142
-    //        data = [responseString dataUsingEncoding:NSUTF8StringEncoding];
-    //
-    //        if (data) {
-    //            if ([data length] > 0) {
-    //                return [NSJSONSerialization JSONObjectWithData:data options:self.readingOptions error:error];
-    //            } else {
-    //                return nil;
-    //            }
-    //        } else {
-    //            NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
-    //            [userInfo setValue:NSLocalizedStringFromTable(@"Data failed decoding as a UTF-8 string", nil, @"AFNetworking") forKey:NSLocalizedDescriptionKey];
-    //            [userInfo setValue:[NSString stringWithFormat:NSLocalizedStringFromTable(@"Could not decode string: %@", nil, @"AFNetworking"), responseString] forKey:NSLocalizedFailureReasonErrorKey];
-    //            if (error) {
-    //                *error = [[NSError alloc] initWithDomain:RBKSocketNetworkingErrorDomain code:NSURLErrorCannotDecodeContentData userInfo:userInfo];
-    //            }
-    //        }
-    //    }
+    if (!responseMessage) {
+        NSLog(@"Did not receive response message");
+        return nil;
+    }
     
-    NSLog(@"DWA: need to create our response object");
     
+    if ([responseMessage isKindOfClass:[NSString class]]) {
+        return [responseMessage dataUsingEncoding:NSUTF8StringEncoding];
+    }
+    
+    if ([responseMessage isKindOfClass:[NSData class]]) {
+        if ([responseMessage length] <= 0) {
+            NSLog(@"Did received response message of 0 length");
+            return nil;
+        }
+        return responseMessage;
+    }
+
+    NSLog(@"Unsupported response message type %@ for serialization as data", NSStringFromClass([responseMessage class]));
     return nil;
 }
 
@@ -391,35 +354,24 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
 
 #pragma mark - RBKSocketRequestSerialization
 
-- (id)responseObjectForResponse:(NSURLResponse *)response
-                           data:(NSData *)data
-                          error:(NSError *__autoreleasing *)error
+- (id)responseObjectForResponseMessage:(id)responseMessage
+                                 error:(NSError *__autoreleasing *)error
 {
-    if (![self validateResponse:(NSHTTPURLResponse *)response data:data error:error]) {
+    if (![self validateResponse:nil data:responseMessage error:error]) {
         if ([(NSError *)(*error) code] == NSURLErrorCannotDecodeContentData) {
             return nil;
         }
     }
-
-    // Workaround for behavior of Rails to return a single space for `head :ok` (a workaround for a bug in Safari), which is not interpreted as valid input by NSJSONSerialization.
-    // See https://github.com/rails/rails/issues/1742
-    NSStringEncoding stringEncoding = self.stringEncoding;
-    if (response.textEncodingName) {
-        CFStringEncoding encoding = CFStringConvertIANACharSetNameToEncoding((CFStringRef)response.textEncodingName);
-        if (encoding != kCFStringEncodingInvalidId) {
-            stringEncoding = CFStringConvertEncodingToNSStringEncoding(encoding);
-        }
-    }
     
-    NSString *responseString = [[NSString alloc] initWithData:data encoding:stringEncoding];
+    NSString *responseString = [[NSString alloc] initWithData:responseMessage encoding:NSUTF8StringEncoding];
     if (responseString && ![responseString isEqualToString:@" "]) {
         // Workaround for a bug in NSJSONSerialization when Unicode character escape codes are used instead of the actual character
         // See http://stackoverflow.com/a/12843465/157142
-        data = [responseString dataUsingEncoding:NSUTF8StringEncoding];
+        responseMessage = [responseString dataUsingEncoding:NSUTF8StringEncoding];
 
-        if (data) {
-            if ([data length] > 0) {
-                return [NSJSONSerialization JSONObjectWithData:data options:self.readingOptions error:error];
+        if (responseMessage) {
+            if ([responseMessage length] > 0) {
+                return [NSJSONSerialization JSONObjectWithData:responseMessage options:self.readingOptions error:error];
             } else {
                 return nil;
             }
@@ -487,17 +439,16 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
 
 #pragma mark - RBKSocketURLResponseSerialization
 
-- (id)responseObjectForResponse:(NSHTTPURLResponse *)response
-                           data:(NSData *)data
-                          error:(NSError *__autoreleasing *)error
+- (id)responseObjectForResponseMessage:(id)responseMessage
+                                 error:(NSError *__autoreleasing *)error
 {
-    if (![self validateResponse:(NSHTTPURLResponse *)response data:data error:error]) {
+    if (![self validateResponse:nil data:responseMessage error:error]) {
         if ([(NSError *)(*error) code] == NSURLErrorCannotDecodeContentData) {
             return nil;
         }
     }
 
-    return [[NSXMLParser alloc] initWithData:data];
+    return [[NSXMLParser alloc] initWithData:responseMessage];
 }
 
 @end
@@ -530,11 +481,10 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
 
 #pragma mark - RBKSocketURLResponseSerialization
 
-- (id)responseObjectForResponse:(NSURLResponse *)response
-                           data:(NSData *)data
-                          error:(NSError *__autoreleasing *)error
+- (id)responseObjectForResponseMessage:(id)responseMessage
+                                 error:(NSError *__autoreleasing *)error
 {
-    if (![self validateResponse:(NSHTTPURLResponse *)response data:data error:error]) {
+    if (![self validateResponse:nil data:responseMessage error:error]) {
         if ([(NSError *)(*error) code] == NSURLErrorCannotDecodeContentData) {
             return nil;
         }
@@ -614,17 +564,16 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
 
 #pragma mark - AFURLResponseSerialization
 
-- (id)responseObjectForResponse:(NSURLResponse *)response
-                           data:(NSData *)data
-                          error:(NSError *__autoreleasing *)error
+- (id)responseObjectForResponseMessage:(id)responseMessage
+                                 error:(NSError *__autoreleasing *)error
 {
-    if (![self validateResponse:(NSHTTPURLResponse *)response data:data error:error]) {
+    if (![self validateResponse:nil data:responseMessage error:error]) {
         if ([(NSError *)(*error) code] == NSURLErrorCannotDecodeContentData) {
             return nil;
         }
     }
 
-    return [NSPropertyListSerialization propertyListWithData:data options:self.readOptions format:NULL error:error];
+    return [NSPropertyListSerialization propertyListWithData:responseMessage options:self.readOptions format:NULL error:error];
 }
 
 #pragma mark - NSCoding
@@ -662,261 +611,6 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
 
 #pragma mark -
 
-#if defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
-#import <CoreGraphics/CoreGraphics.h>
-
-static UIImage * AFImageWithDataAtScale(NSData *data, CGFloat scale) {
-    UIImage *image = [[UIImage alloc] initWithData:data];
-
-    return [[UIImage alloc] initWithCGImage:[image CGImage] scale:scale orientation:image.imageOrientation];
-}
-
-static UIImage * AFInflatedImageFromResponseWithDataAtScale(NSHTTPURLResponse *response, NSData *data, CGFloat scale) {
-    if (!data || [data length] == 0) {
-        return nil;
-    }
-
-    CGImageRef imageRef = nil;
-    CGDataProviderRef dataProvider = CGDataProviderCreateWithCFData((__bridge CFDataRef)data);
-
-    if ([response.MIMEType isEqualToString:@"image/png"]) {
-        imageRef = CGImageCreateWithPNGDataProvider(dataProvider,  NULL, true, kCGRenderingIntentDefault);
-    } else if ([response.MIMEType isEqualToString:@"image/jpeg"]) {
-        imageRef = CGImageCreateWithJPEGDataProvider(dataProvider, NULL, true, kCGRenderingIntentDefault);
-    }
-
-    if (!imageRef) {
-        UIImage *image = AFImageWithDataAtScale(data, scale);
-        if (image.images) {
-            CGDataProviderRelease(dataProvider);
-
-            return image;
-        }
-
-        imageRef = CGImageCreateCopy([image CGImage]);
-    }
-
-    CGDataProviderRelease(dataProvider);
-
-    if (!imageRef) {
-        return nil;
-    }
-
-    size_t width = CGImageGetWidth(imageRef);
-    size_t height = CGImageGetHeight(imageRef);
-
-    if (width * height > 1024 * 1024) {
-        CGImageRelease(imageRef);
-
-        return AFImageWithDataAtScale(data, scale);
-    }
-
-    size_t bitsPerComponent = CGImageGetBitsPerComponent(imageRef);
-    size_t bytesPerRow = 0; // CGImageGetBytesPerRow() calculates incorrectly in iOS 5.0, so defer to CGBitmapContextCreate()
-    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-    CGBitmapInfo bitmapInfo = CGImageGetBitmapInfo(imageRef);
-
-    if (CGColorSpaceGetNumberOfComponents(colorSpace) == 3) {
-        uint32_t alpha = (bitmapInfo & kCGBitmapAlphaInfoMask);
-        if (alpha == kCGImageAlphaNone) {
-            bitmapInfo &= ~kCGBitmapAlphaInfoMask;
-            bitmapInfo |= kCGImageAlphaNoneSkipFirst;
-        } else if (!(alpha == kCGImageAlphaNoneSkipFirst || alpha == kCGImageAlphaNoneSkipLast)) {
-            bitmapInfo &= ~kCGBitmapAlphaInfoMask;
-            bitmapInfo |= kCGImageAlphaPremultipliedFirst;
-        }
-    }
-
-    CGContextRef context = CGBitmapContextCreate(NULL, width, height, bitsPerComponent, bytesPerRow, colorSpace, bitmapInfo);
-
-    CGColorSpaceRelease(colorSpace);
-
-    if (!context) {
-        CGImageRelease(imageRef);
-
-        return AFImageWithDataAtScale(data, scale);
-    }
-
-    CGRect rect = CGRectMake(0.0f, 0.0f, width, height);
-    CGContextDrawImage(context, rect, imageRef);
-    CGImageRef inflatedImageRef = CGBitmapContextCreateImage(context);
-    CGContextRelease(context);
-
-    UIImage *inflatedImage = [[UIImage alloc] initWithCGImage:inflatedImageRef scale:scale orientation:UIImageOrientationUp];
-    CGImageRelease(inflatedImageRef);
-    CGImageRelease(imageRef);
-
-    return inflatedImage;
-}
-#endif
-
-
-@implementation RBKSocketImageResponseSerializer
-
-- (instancetype)init {
-    self = [super init];
-    if (!self) {
-        return nil;
-    }
-
-#if defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
-    self.imageScale = [[UIScreen mainScreen] scale];
-    self.automaticallyInflatesResponseImage = YES;
-#endif
-
-    return self;
-}
-
-+ (NSSet *)acceptablePathExtensions {
-    static NSSet * _acceptablePathExtension = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        _acceptablePathExtension = [[NSSet alloc] initWithObjects:@"tif", @"tiff", @"jpg", @"jpeg", @"gif", @"png", @"ico", @"bmp", @"cur", nil];
-    });
-
-    return _acceptablePathExtension;
-}
-
-#pragma mark - AFURLResponseSerializer
-
-- (id)responseObjectForResponse:(NSURLResponse *)response
-                           data:(NSData *)data
-                          error:(NSError *__autoreleasing *)error
-{
-    if (![self validateResponse:(NSHTTPURLResponse *)response data:data error:error]) {
-        if ([(NSError *)(*error) code] == NSURLErrorCannotDecodeContentData) {
-            return nil;
-        }
-    }
-
-#if defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
-    if (self.automaticallyInflatesResponseImage) {
-        return AFInflatedImageFromResponseWithDataAtScale((NSHTTPURLResponse *)response, data, self.imageScale);
-    } else {
-        return AFImageWithDataAtScale(data, self.imageScale);
-    }
-#elif defined(__MAC_OS_X_VERSION_MIN_REQUIRED)
-    // Ensure that the image is set to it's correct pixel width and height
-    NSBitmapImageRep *bitimage = [[NSBitmapImageRep alloc] initWithData:data];
-    NSImage *image = [[NSImage alloc] initWithSize:NSMakeSize([bitimage pixelsWide], [bitimage pixelsHigh])];
-    [image addRepresentation:bitimage];
-
-    return image;
-#endif
-
-    return nil;
-}
-
-#pragma mark - NSCoding
-
-- (id)initWithCoder:(NSCoder *)decoder {
-    self = [super initWithCoder:decoder];
-    if (!self) {
-        return nil;
-    }
-
-#if defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
-    self.imageScale = [decoder decodeFloatForKey:NSStringFromSelector(@selector(imageScale))];
-    self.automaticallyInflatesResponseImage = [decoder decodeBoolForKey:NSStringFromSelector(@selector(automaticallyInflatesResponseImage))];
-#endif
-
-    return self;
-}
-
-- (void)encodeWithCoder:(NSCoder *)coder {
-    [super encodeWithCoder:coder];
-
-#if defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
-    [coder encodeFloat:self.imageScale forKey:NSStringFromSelector(@selector(imageScale))];
-    [coder encodeBool:self.automaticallyInflatesResponseImage forKey:NSStringFromSelector(@selector(automaticallyInflatesResponseImage))];
-#endif
-}
-
-#pragma mark - NSCopying
-
-- (id)copyWithZone:(NSZone *)zone {
-    RBKSocketImageResponseSerializer *serializer = [[[self class] allocWithZone:zone] init];
-
-#if defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
-    serializer.imageScale = self.imageScale;
-    serializer.automaticallyInflatesResponseImage = self.automaticallyInflatesResponseImage;
-#endif
-
-    return serializer;
-}
-
-@end
-
-#pragma mark -
-
-@interface RBKSocketCompoundResponseSerializer ()
-@property (readwrite, nonatomic, strong) NSArray *responseSerializers;
-@end
-
-@implementation RBKSocketCompoundResponseSerializer
-
-+ (instancetype)compoundSerializerWithResponseSerializers:(NSArray *)responseSerializers {
-    RBKSocketCompoundResponseSerializer *serializer = [[self alloc] init];
-    serializer.responseSerializers = responseSerializers;
-
-    return serializer;
-}
-
-#pragma mark - AFURLResponseSerialization
-
-- (id)responseObjectForResponse:(NSURLResponse *)response
-                           data:(NSData *)data
-                          error:(NSError *__autoreleasing *)error
-{
-    for (id <RBKSocketResponseSerialization> serializer in self.responseSerializers) {
-        if (![serializer isKindOfClass:[RBKSocketResponseSerializer class]]) {
-            continue;
-        }
-
-        NSError *serializerError = nil;
-        id responseObject = [serializer responseObjectForResponse:response data:data error:&serializerError];
-        if (responseObject) {
-            *error = serializerError;
-            return responseObject;
-        }
-    }
-    
-    return [super responseObjectForResponse:response data:data error:error];
-}
-
-#pragma mark - NSCoding
-
-- (id)initWithCoder:(NSCoder *)decoder {
-    self = [super initWithCoder:decoder];
-    if (!self) {
-        return nil;
-    }
-
-    self.responseSerializers = [decoder decodeObjectForKey:NSStringFromSelector(@selector(responseSerializers))];
-
-    return self;
-}
-
-- (void)encodeWithCoder:(NSCoder *)coder {
-    [super encodeWithCoder:coder];
-
-    [coder encodeObject:self.responseSerializers forKey:NSStringFromSelector(@selector(responseSerializers))];
-}
-
-#pragma mark - NSCopying
-
-- (id)copyWithZone:(NSZone *)zone {
-    RBKSocketCompoundResponseSerializer *serializer = [[[self class] allocWithZone:zone] init];
-    serializer.responseSerializers = self.responseSerializers;
-
-    return serializer;
-}
-
-@end
-
-
-#pragma mark -
-
 @implementation RBKSocketSTOMPResponseSerializer
 
 + (instancetype)serializer {
@@ -941,11 +635,10 @@ static UIImage * AFInflatedImageFromResponseWithDataAtScale(NSHTTPURLResponse *r
 
 #pragma mark - RBKSocketRequestSerialization
 
-- (id)responseObjectForResponse:(NSURLResponse *)response
-                           data:(NSData *)data
-                          error:(NSError *__autoreleasing *)error
+- (id)responseObjectForResponseMessage:(id)responseMessage
+                                 error:(NSError *__autoreleasing *)error
 {
-    if (![self validateResponse:(NSHTTPURLResponse *)response data:data error:error]) {
+    if (![self validateResponse:nil data:responseMessage error:error]) {
         if ([(NSError *)(*error) code] == NSURLErrorCannotDecodeContentData) {
             return nil;
         }
