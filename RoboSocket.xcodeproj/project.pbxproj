@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4F4EF7E6183533BE00016386 /* RBKSTOMPMessage.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F4EF7E5183533BE00016386 /* RBKSTOMPMessage.m */; };
 		4F50DAEB180EE6530035BE77 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F50DAEA180EE6530035BE77 /* Foundation.framework */; };
 		4F50DAED180EE6530035BE77 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F50DAEC180EE6530035BE77 /* CoreGraphics.framework */; };
 		4F50DAEF180EE6530035BE77 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F50DAEE180EE6530035BE77 /* UIKit.framework */; };
@@ -76,6 +77,8 @@
 
 /* Begin PBXFileReference section */
 		0741FCACF876427B9BE1C41A /* Pods-RoboSocketTests.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RoboSocketTests.xcconfig"; path = "Pods/Pods-RoboSocketTests.xcconfig"; sourceTree = "<group>"; };
+		4F4EF7E4183533BE00016386 /* RBKSTOMPMessage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RBKSTOMPMessage.h; sourceTree = "<group>"; };
+		4F4EF7E5183533BE00016386 /* RBKSTOMPMessage.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RBKSTOMPMessage.m; sourceTree = "<group>"; };
 		4F50DAE7180EE6530035BE77 /* RoboSocketExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoboSocketExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4F50DAEA180EE6530035BE77 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		4F50DAEC180EE6530035BE77 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -269,6 +272,8 @@
 				4F8ED13D182477A300055715 /* RBKSocketRequestSerialization.m */,
 				4F8ED13E182477A300055715 /* RBKSocketResponseSerialization.h */,
 				4F8ED13F182477A300055715 /* RBKSocketResponseSerialization.m */,
+				4F4EF7E4183533BE00016386 /* RBKSTOMPMessage.h */,
+				4F4EF7E5183533BE00016386 /* RBKSTOMPMessage.m */,
 				4F50DB29180EEFE80035BE77 /* Supporting Files */,
 			);
 			path = RoboSocket;
@@ -536,6 +541,7 @@
 				4F50DB2E180EEFE80035BE77 /* RoboSocket.m in Sources */,
 				4F8ED141182477A300055715 /* RBKSocketResponseSerialization.m in Sources */,
 				4F8ED140182477A300055715 /* RBKSocketRequestSerialization.m in Sources */,
+				4F4EF7E6183533BE00016386 /* RBKSTOMPMessage.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

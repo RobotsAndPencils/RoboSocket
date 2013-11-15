@@ -21,6 +21,7 @@
 // THE SOFTWARE.
 
 #import "RBKSocketResponseSerialization.h"
+#import "RBKSTOMPMessage.h"
 
 extern NSString * const RBKSocketNetworkingErrorDomain;
 extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
@@ -264,7 +265,6 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
         NSLog(@"Did not receive response message");
         return nil;
     }
-    
     
     if ([responseMessage isKindOfClass:[NSString class]]) {
         return [responseMessage dataUsingEncoding:NSUTF8StringEncoding];
@@ -644,41 +644,21 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
         }
     }
     
-    //    // Workaround for behavior of Rails to return a single space for `head :ok` (a workaround for a bug in Safari), which is not interpreted as valid input by NSJSONSerialization.
-    //    // See https://github.com/rails/rails/issues/1742
-    //    NSStringEncoding stringEncoding = self.stringEncoding;
-    //    if (response.textEncodingName) {
-    //        CFStringEncoding encoding = CFStringConvertIANACharSetNameToEncoding((CFStringRef)response.textEncodingName);
-    //        if (encoding != kCFStringEncodingInvalidId) {
-    //            stringEncoding = CFStringConvertEncodingToNSStringEncoding(encoding);
-    //        }
-    //    }
-    //
-    //    NSString *responseString = [[NSString alloc] initWithData:data encoding:stringEncoding];
-    //    if (responseString && ![responseString isEqualToString:@" "]) {
-    //        // Workaround for a bug in NSJSONSerialization when Unicode character escape codes are used instead of the actual character
-    //        // See http://stackoverflow.com/a/12843465/157142
-    //        data = [responseString dataUsingEncoding:NSUTF8StringEncoding];
-    //
-    //        if (data) {
-    //            if ([data length] > 0) {
-    //                return [NSJSONSerialization JSONObjectWithData:data options:self.readingOptions error:error];
-    //            } else {
-    //                return nil;
-    //            }
-    //        } else {
-    //            NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
-    //            [userInfo setValue:NSLocalizedStringFromTable(@"Data failed decoding as a UTF-8 string", nil, @"AFNetworking") forKey:NSLocalizedDescriptionKey];
-    //            [userInfo setValue:[NSString stringWithFormat:NSLocalizedStringFromTable(@"Could not decode string: %@", nil, @"AFNetworking"), responseString] forKey:NSLocalizedFailureReasonErrorKey];
-    //            if (error) {
-    //                *error = [[NSError alloc] initWithDomain:RBKSocketNetworkingErrorDomain code:NSURLErrorCannotDecodeContentData userInfo:userInfo];
-    //            }
-    //        }
-    //    }
+    if (!responseMessage) {
+        NSLog(@"Did not receive response message");
+        return nil;
+    }
     
-    NSLog(@"DWA: need to create our response object");
+    if ([responseMessage isKindOfClass:[NSString class]]) {
+        responseMessage = [responseMessage dataUsingEncoding:NSUTF8StringEncoding];
+    }
     
-    return nil;
+    if (![responseMessage isKindOfClass:[NSData class]]) {
+        NSLog(@"Unsupported response message type %@ for serialization as data", NSStringFromClass([responseMessage class]));
+        return nil;
+    }
+    
+    return [RBKSTOMPMessage responseMessageFromData:responseMessage];
 }
 
 #pragma mark - NSCoding

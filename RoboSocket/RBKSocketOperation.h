@@ -11,6 +11,9 @@
 #import "RBKSocketResponseSerialization.h"
 #import "RoboSocket.h"
 
+extern NSString * const RBKSocketNetworkingErrorDomain;
+
+
 @interface RBKSocketOperation : NSOperation
 
 ///-------------------------------

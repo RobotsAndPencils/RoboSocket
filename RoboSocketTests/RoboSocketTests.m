@@ -14,9 +14,17 @@
 #import "RBKSocketManager.h"
 #import "RBKSocketRequestSerialization.h"
 #import "RBKSocketResponseSerialization.h"
+#import "RBKSTOMPMessage.h"
 
 #import <SocketRocket/SRServerSocket.h>
 #import <SocketRocket/SRWebSocket.h>
+
+typedef NS_ENUM(NSUInteger, RBKTestScenario) {
+    RBKTestScenarioNone = 0,
+    RBKTestScenarioSTOMPConnect,
+    RBKTestScenarioSTOMPSubscribe,
+};
+
 
 // NSString * const hostURL = @"ws://echo.websocket.org";
 NSString * const hostURL = @"ws://localhost";
@@ -27,6 +35,7 @@ NSString * const hostURL = @"ws://localhost";
 @property (strong, nonatomic) SRServerSocket *stubSocket;
 
 @property (assign, nonatomic, getter = isFinished) BOOL socketOpen;
+@property (assign, nonatomic) RBKTestScenario currentScenario;
 
 @end
 
@@ -35,8 +44,9 @@ NSString * const hostURL = @"ws://localhost";
 - (void)setUp {
     [super setUp];
     // Put setup code here. This method is called before the invocation of each test method in the class.
-    [Expecta setAsynchronousTestTimeout:300.0];
+    [Expecta setAsynchronousTestTimeout:5.0];
 
+    self.currentScenario = RBKTestScenarioNone;
     self.socketOpen = NO;
     self.stubSocket = [[SRServerSocket alloc] initWithURL:[NSURL URLWithString:hostURL]];
     self.stubSocket.delegate = self;
@@ -150,14 +160,90 @@ NSString * const hostURL = @"ws://localhost";
     expect(responseMessage).will.equal(sentMessage); // using JSON serializers, we can feed it JSON, and we get a JSON response
 }
 
+// JSON:
+// data to JSON
+// string to JSON
+// JSON to string?
+// JSON to data?
+
+- (void)testSocketEchoSTOMPConnect {
+    
+    self.currentScenario = RBKTestScenarioSTOMPConnect;
+
+    self.socketManager.requestSerializer = [RBKSocketSTOMPRequestSerializer serializer];
+    self.socketManager.responseSerializer = [RBKSocketSTOMPResponseSerializer serializer];
+    
+    RBKSTOMPMessage *connectMessage = [RBKSTOMPMessage connectMessageWithLogin:@"username" passcode:@"passcode" host:[[NSURL URLWithString:hostURL] host]];
+    
+    __block BOOL success = NO;
+    __block RBKSTOMPMessage *responseMessage = nil;
+    [self.socketManager sendSocketOperationWithMessage:connectMessage success:^(RBKSocketOperation *operation, id responseObject) {
+        success = YES;
+        responseMessage = responseObject; // probably isn't echo'd per the standard, but this at least validates the conversion to/from RBKSTOMPMessage
+    } failure:^(RBKSocketOperation *operation, NSError *error) {
+        success = NO;
+    }];
+    expect(success).will.beTruthy();
+    expect([responseMessage frameData]).willNot.equal([connectMessage frameData]); // connect message should get connection response
+    expect(responseMessage.command).will.equal(RBKSTOMPCommandConnected);
+    expect([responseMessage headerValueForKey:RBKStompHeaderVersion]).will.equal(RBKSTOMPVersion1_2);
+}
+
+// Connection:
+// heart beat is not tested
+// negotiation error is not tested
+
+- (void)testSocketEchoSTOMPSubscribe {
+    
+    self.currentScenario = RBKTestScenarioSTOMPSubscribe;
+
+    self.socketManager.requestSerializer = [RBKSocketSTOMPRequestSerializer serializer];
+    self.socketManager.responseSerializer = [RBKSocketSTOMPResponseSerializer serializer];
+    
+    RBKSTOMPMessage *subscriptionMessage = [RBKSTOMPMessage subscribeMessageWithDestination:@"/foo/bar" headers:@{@"x-test": @"12345"}];
+    
+    __block BOOL success = NO;
+    __block RBKSTOMPMessage *responseMessage = nil;
+    [self.socketManager sendSocketOperationWithMessage:subscriptionMessage success:^(RBKSocketOperation *operation, id responseObject) {
+        success = YES;
+        
+        // subscriptions arent' echoed per the standard. Send a message that matches the subscription
+        
+        responseMessage = responseObject; // probably isn't echo'd per the standard, but this at least validates the conversion to/from RBKSTOMPMessage
+    } failure:^(RBKSocketOperation *operation, NSError *error) {
+        success = NO;
+    }];
+    expect(success).will.beTruthy();
+    expect([responseMessage headerValueForKey:RBKStompHeaderDestination]).will.equal([subscriptionMessage headerValueForKey:RBKStompHeaderDestination]);
+    expect([responseMessage headerValueForKey:RBKStompHeaderSubscription]).will.equal([subscriptionMessage headerValueForKey:RBKStompHeaderID]);
+    expect([responseMessage bodyValue]).will.equal(@"Message for you sir");
+    expect([responseMessage frameData]).willNot.equal([subscriptionMessage frameData]); // subscribe message should get no immediate response, but for now give it a message response
+}
+
+// Subscription:
+// subscription error is not tested
+
+
 #pragma mark - Private
 
 #pragma mark - SRWebSocketDelegate
 
 - (void)webSocket:(SRWebSocket *)webSocket didReceiveMessage:(id)message; {
     NSLog(@"Received message %@", message);
-    // now echo it back?
-    
+    // specific responses
+    switch (self.currentScenario) {
+        case RBKTestScenarioSTOMPConnect:
+            [webSocket send:[[self connectedMessageForConnectMessageData:message] frameData]];
+            return;
+
+        case RBKTestScenarioSTOMPSubscribe:
+            [webSocket send:[[self messageMessage:@"Message for you sir" forSubscribeMessageData:message] frameData]];
+            return;
+
+        default:
+            break;
+    }
+    // or echo it back
     [webSocket send:message];
 }
 
@@ -178,6 +264,27 @@ NSString * const hostURL = @"ws://localhost";
 
     self.socketOpen = NO;
 
+}
+
+#pragma mark - STOMP Response Messages
+
+- (RBKSTOMPMessage *)connectedMessageForConnectMessageData:(NSData *)receivedMessageData {
+    RBKSTOMPMessage *receivedMessage = [RBKSTOMPMessage responseMessageFromData:receivedMessageData];
+
+    NSString *acceptedVersion = [receivedMessage headerValueForKey:RBKStompHeaderAcceptVersion];
+    
+    RBKSTOMPMessage *connectedMessage = [RBKSTOMPMessage connectedMessageWithVersion:acceptedVersion];
+    return connectedMessage;
+}
+
+- (RBKSTOMPMessage *)messageMessage:(NSString *)messageBody forSubscribeMessageData:(NSData *)receivedMessageData { // change our internal "message" to "frame"
+    RBKSTOMPMessage *receivedMessage = [RBKSTOMPMessage responseMessageFromData:receivedMessageData];
+    
+    NSString *destination = [receivedMessage headerValueForKey:RBKStompHeaderDestination];
+    NSString *subscriptionID = [receivedMessage headerValueForKey:RBKStompHeaderID];
+    
+    RBKSTOMPMessage *messageMessage = [RBKSTOMPMessage messageMessageWithDestination:destination headers:nil body:messageBody subscription:subscriptionID];
+    return messageMessage;
 }
 
 

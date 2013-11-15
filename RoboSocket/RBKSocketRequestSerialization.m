@@ -22,8 +22,7 @@
 
 #import "RBKSocketRequestSerialization.h"
 #import "RBKSocketOperation.h"
-
-extern NSString * const RBKSocketNetworkingErrorDomain;
+#import "RBKSTOMPMessage.h"
 
 typedef NSString * (^AFQueryStringSerializationBlock)(NSURLRequest *request, NSDictionary *parameters, NSError *__autoreleasing *error);
 
@@ -1214,32 +1213,18 @@ typedef enum {
 {
     NSParameterAssert(request);
     
-//    if ([self.HTTPMethodsEncodingParametersInURI containsObject:[[request HTTPMethod] uppercaseString]]) {
-//        return [super requestBySerializingRequest:request withParameters:parameters error:error];
-//    }
-//    
-//    NSMutableURLRequest *mutableRequest = [request mutableCopy];
-//    
-//    [self.HTTPRequestHeaders enumerateKeysAndObjectsUsingBlock:^(id field, id value, BOOL * __unused stop) {
-//        if (![request valueForHTTPHeaderField:field]) {
-//            [mutableRequest setValue:value forHTTPHeaderField:field];
-//        }
-//    }];
-//    
-//    if (!parameters) {
-//        return mutableRequest;
-//    }
-//    
-//    NSString *charset = (__bridge NSString *)CFStringConvertEncodingToIANACharSetName(CFStringConvertNSStringEncodingToEncoding(NSUTF8StringEncoding));
-//    
-//    [mutableRequest setValue:[NSString stringWithFormat:@"application/json; charset=%@", charset] forHTTPHeaderField:@"Content-Type"];
-//    [mutableRequest setHTTPBody:[NSJSONSerialization dataWithJSONObject:parameters options:self.writingOptions error:error]];
-//    
-//    return mutableRequest;
+    id message = request.requestMessage;
     
-    NSLog(@"Figure out STOMP serializer");
+    if (![message isKindOfClass:[RBKSTOMPMessage class]]) {
+        // not sure how to (or if we should) coerce other formats into a JSON
+        NSLog(@"Unsupported request message type %@ for serialization as JSON", NSStringFromClass([message class]));
+        return nil;
+    }
     
-    return nil;
+    RBKSTOMPMessage *stompMessage = (RBKSTOMPMessage *)message;
+    
+    NSData *messageAsData = [stompMessage frameData];
+    return [[RBKSocketOperation alloc] initWithRequestMessage:messageAsData];    
 }
 
 @end

@@ -79,7 +79,7 @@
     
     if (!operation) {
         NSLog(@"Failed to create a socket operation");
-        NSError *error = [NSError errorWithDomain:@"com.robotsandpencils.robosocket" code:-1 userInfo:nil];
+        NSError *error = [NSError errorWithDomain:RBKSocketNetworkingErrorDomain code:-1 userInfo:nil];
         if (failure) {
             failure(nil, error);
         }
