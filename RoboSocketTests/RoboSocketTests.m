@@ -229,15 +229,15 @@ NSString * const hostURL = @"ws://localhost";
 #pragma mark - SRWebSocketDelegate
 
 - (void)webSocket:(SRWebSocket *)webSocket didReceiveMessage:(id)message; {
-    NSLog(@"Received message %@", message);
+    NSLog(@"Received frame %@", message);
     // specific responses
     switch (self.currentScenario) {
         case RBKTestScenarioStompConnect:
-            [webSocket send:[[self connectedMessageForConnectMessageData:message] frameData]];
+            [webSocket send:[[self connectedFrameForConnectFrameData:message] frameData]];
             return;
 
         case RBKTestScenarioStompSubscribe:
-            [webSocket send:[[self messageMessage:@"Message for you sir" forSubscribeMessageData:message] frameData]];
+            [webSocket send:[[self messageFrame:@"Message for you sir" forSubscribeFrameData:message] frameData]];
             return;
 
         default:
@@ -268,23 +268,23 @@ NSString * const hostURL = @"ws://localhost";
 
 #pragma mark - STOMP Response Messages
 
-- (RBKStompFrame *)connectedMessageForConnectMessageData:(NSData *)receivedMessageData {
-    RBKStompFrame *receivedMessage = [RBKStompFrame responseFrameFromData:receivedMessageData];
+- (RBKStompFrame *)connectedFrameForConnectFrameData:(NSData *)receivedMessageData {
+    RBKStompFrame *receivedFrame = [RBKStompFrame responseFrameFromData:receivedMessageData];
 
-    NSString *acceptedVersion = [receivedMessage headerValueForKey:RBKStompHeaderAcceptVersion];
+    NSString *acceptedVersion = [receivedFrame headerValueForKey:RBKStompHeaderAcceptVersion];
     
-    RBKStompFrame *connectedMessage = [RBKStompFrame connectedFrameWithVersion:acceptedVersion];
-    return connectedMessage;
+    RBKStompFrame *connectedFrame = [RBKStompFrame connectedFrameWithVersion:acceptedVersion];
+    return connectedFrame;
 }
 
-- (RBKStompFrame *)messageMessage:(NSString *)messageBody forSubscribeMessageData:(NSData *)receivedMessageData { // change our internal "message" to "frame"
-    RBKStompFrame *receivedMessage = [RBKStompFrame responseFrameFromData:receivedMessageData];
+- (RBKStompFrame *)messageFrame:(NSString *)messageBody forSubscribeFrameData:(NSData *)receivedMessageData { // change our internal "message" to "frame"
+    RBKStompFrame *receivedFrame = [RBKStompFrame responseFrameFromData:receivedMessageData];
     
-    NSString *destination = [receivedMessage headerValueForKey:RBKStompHeaderDestination];
-    NSString *subscriptionID = [receivedMessage headerValueForKey:RBKStompHeaderID];
+    NSString *destination = [receivedFrame headerValueForKey:RBKStompHeaderDestination];
+    NSString *subscriptionID = [receivedFrame headerValueForKey:RBKStompHeaderID];
     
-    RBKStompFrame *messageMessage = [RBKStompFrame messageFrameWithDestination:destination headers:nil body:messageBody subscription:subscriptionID];
-    return messageMessage;
+    RBKStompFrame *messageFrame = [RBKStompFrame messageFrameWithDestination:destination headers:nil body:messageBody subscription:subscriptionID];
+    return messageFrame;
 }
 
 
