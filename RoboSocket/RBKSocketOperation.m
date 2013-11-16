@@ -91,17 +91,17 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
 
 
 
-@interface RBKSocketOperation () <RBKSocketMessageDelegate>
+@interface RBKSocketOperation () <RBKSocketFrameDelegate>
 
 @property (readwrite, nonatomic, assign) RBKSocketOperationState state;
 @property (readwrite, nonatomic, assign, getter = isCancelled) BOOL cancelled;
-@property (readwrite, nonatomic, strong) id requestMessage;
+@property (readwrite, nonatomic, strong) id requestFrame;
 @property (readwrite, nonatomic, strong) id response; // need to deprecate this?
 @property (readwrite, nonatomic, strong) id responseObject;
 
 @property (readwrite, nonatomic, strong) NSError *error;
 @property (readwrite, nonatomic, strong) NSData *responseData; // deprecate?
-@property (readwrite, nonatomic, copy) id responseMessage;
+@property (readwrite, nonatomic, copy) id responseFrame;
 @property (readwrite, nonatomic, copy) NSString *responseString; // deprecate?
 
 @property (readwrite, nonatomic, strong) NSError *responseSerializationError;
@@ -133,8 +133,8 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
     return _networkRequestThread;
 }
 
-- (instancetype)initWithRequestMessage:(id)message {
-    NSParameterAssert(message);
+- (instancetype)initWithRequestFrame:(id)frame {
+    NSParameterAssert(frame);
     
     self = [super init];
     if (!self) {
@@ -146,7 +146,7 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
     
     self.runLoopModes = [NSSet setWithObject:NSRunLoopCommonModes];
     
-    self.requestMessage = message;
+    self.requestFrame = frame;
     
     // self.shouldUseCredentialStorage = YES;
     
@@ -161,7 +161,7 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
     [self.lock lock];
     if (!_responseObject && [self isFinished] && !self.error) {
         NSError *error = nil;
-        self.responseObject = [self.responseSerializer responseObjectForResponseMessage:self.responseMessage error:&error];
+        self.responseObject = [self.responseSerializer responseObjectForResponseFrame:self.responseFrame error:&error];
         if (error) {
             self.responseSerializationError = error;
         }
@@ -270,8 +270,8 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
         
         // NSLog(@"start socket operation");
         
-        self.socket.messageDelegate = self;
-        [self.socket sendMessage:self.requestMessage];
+        self.socket.frameDelegate = self;
+        [self.socket sendFrame:self.requestFrame];
         
     }
     [self.lock unlock];
@@ -310,7 +310,7 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
 - (void)cancelConnection {
     NSDictionary *userInfo = nil;
     
-    // instead of a request, we have a message
+    // instead of a request, we have a frame
     
     if (0 /*[self.request URL]*/) {
         userInfo = [NSDictionary dictionaryWithObject:@"our-socket?" /*[self.request URL]*/ forKey:NSURLErrorFailingURLErrorKey];
@@ -323,29 +323,29 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
     }
 }
 
-#pragma mark - RBKSocketMessageDelegate
+#pragma mark - RBKSocketFrameDelegate
 
-// message will either be an NSString if the server is using text
+// frame will either be an NSString if the server is using text
 // or NSData if the server is using binary.
-- (void)webSocket:(RoboSocket *)webSocket didReceiveMessage:(id)message {
-    NSLog(@"received Message");
-    self.responseMessage = message;
+- (void)webSocket:(RoboSocket *)webSocket didReceiveFrame:(id)frame {
+    // NSLog(@"received Frame");
+    self.responseFrame = frame;
     
     [self finish];
     
-    self.socket.messageDelegate = nil;
+    self.socket.frameDelegate = nil;
     self.socket = nil;
 
 }
 
 - (void)webSocket:(RoboSocket *)webSocket didFailWithError:(NSError *)error {
-    NSLog(@"failed");
+    NSLog(@"websocket failed with error %@", [error localizedDescription]);
     
     self.error = error;
     
     [self finish];
     
-    self.socket.messageDelegate = nil;
+    self.socket.frameDelegate = nil;
     self.socket = nil;
 }
 

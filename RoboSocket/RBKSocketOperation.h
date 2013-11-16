@@ -41,7 +41,7 @@ extern NSString * const RBKSocketNetworkingErrorDomain;
 @property (nonatomic, strong) dispatch_group_t completionGroup;
 
 
-@property (readonly, nonatomic, strong) id requestMessage;
+@property (readonly, nonatomic, strong) id requestFrame;
 
 
 /**
@@ -68,7 +68,7 @@ extern NSString * const RBKSocketNetworkingErrorDomain;
 /**
  The string representation of the response data.
  */
-@property (readonly, nonatomic, copy) id responseMessage;
+@property (readonly, nonatomic, copy) id responseFrame;
 
 /**
  The string encoding of the response.
@@ -98,7 +98,7 @@ extern NSString * const RBKSocketOperationDidFinishNotification;
 @property (nonatomic, strong) RoboSocket *socket;
 
 
-- (instancetype)initWithRequestMessage:(id)message;
+- (instancetype)initWithRequestFrame:(id)frame;
 
 - (void)setCompletionBlockWithSuccess:(void (^)(RBKSocketOperation *operation, id responseObject))success
                               failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure;

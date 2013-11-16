@@ -53,12 +53,12 @@
 
 #pragma mark -
 
-- (RBKSocketOperation *)socketOperationWithMessage:(id)message
-                                           success:(void (^)(RBKSocketOperation *operation, id responseObject))success
-                                           failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure {
+- (RBKSocketOperation *)socketOperationWithFrame:(id)frame
+                                         success:(void (^)(RBKSocketOperation *operation, id responseObject))success
+                                         failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure {
     
     
-    RBKSocketOperation *operation = [self.requestSerializer requestOperationWithMessage:message];
+    RBKSocketOperation *operation = [self.requestSerializer requestOperationWithFrame:frame];
     
     operation.responseSerializer = self.responseSerializer;
     // operation.shouldUseCredentialStorage = self.shouldUseCredentialStorage;
@@ -72,10 +72,10 @@
     return operation;
 }
 
-- (RBKSocketOperation *)sendSocketOperationWithMessage:(id)message
-                                               success:(void (^)(RBKSocketOperation *operation, id responseObject))success
-                                               failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure {
-    RBKSocketOperation *operation = [self socketOperationWithMessage:message success:success failure:failure];
+- (RBKSocketOperation *)sendSocketOperationWithFrame:(id)frame
+                                             success:(void (^)(RBKSocketOperation *operation, id responseObject))success
+                                             failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure {
+    RBKSocketOperation *operation = [self socketOperationWithFrame:frame success:success failure:failure];
     
     if (!operation) {
         NSLog(@"Failed to create a socket operation");
@@ -92,10 +92,6 @@
         [self.pendingOperations addObject:operation];
     }
     return operation;
-}
-
-- (void)sendMessageToSocket:(NSString *)message {
-    [self.socket sendMessage:message];
 }
 
 - (void)openSocket {

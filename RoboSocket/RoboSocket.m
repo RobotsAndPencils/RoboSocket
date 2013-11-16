@@ -40,17 +40,16 @@
     [self.socket close];
 }
 
-- (void)sendMessage:(NSString *)message {
-    [self.socket send:message];
+- (void)sendFrame:(id)frame {
+    [self.socket send:frame];
 }
 
 #pragma mark - SRWebSocketDelegate
 
-// RoboSocket needs two delegates - one for messages and one for control? (open/close?)
-
-- (void)webSocket:(SRWebSocket *)webSocket didReceiveMessage:(id)message {
-    // NSLog(@"received message %@", message);
-    [self.messageDelegate webSocket:self didReceiveMessage:message];
+// RoboSocket needs two delegates - one for messages and one for control
+- (void)webSocket:(SRWebSocket *)webSocket didReceiveMessage:(id)frame {
+    // NSLog(@"received frame %@", frame);
+    [self.frameDelegate webSocket:self didReceiveFrame:frame];
 }
 
 - (void)webSocketDidOpen:(SRWebSocket *)webSocket {
@@ -60,7 +59,7 @@
 
 - (void)webSocket:(SRWebSocket *)webSocket didFailWithError:(NSError *)error {
     // NSLog(@"socket failed");
-    [self.messageDelegate webSocket:self didFailWithError:error];
+    [self.frameDelegate webSocket:self didFailWithError:error];
 }
 
 - (void)webSocket:(SRWebSocket *)webSocket didCloseWithCode:(NSInteger)code reason:(NSString *)reason wasClean:(BOOL)wasClean {

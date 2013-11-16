@@ -35,11 +35,11 @@
 
 - (void)closeSocket;
 
-- (RBKSocketOperation *)socketOperationWithMessage:(id)message
-                                           success:(void (^)(RBKSocketOperation *operation, id responseObject))success
-                                           failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure;
+- (RBKSocketOperation *)socketOperationWithFrame:(id)frame
+                                         success:(void (^)(RBKSocketOperation *operation, id responseObject))success
+                                         failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure;
 
-- (RBKSocketOperation *)sendSocketOperationWithMessage:(id)message
-                                               success:(void (^)(RBKSocketOperation *operation, id responseObject))success
-                                               failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure;
+- (RBKSocketOperation *)sendSocketOperationWithFrame:(id)frame
+                                             success:(void (^)(RBKSocketOperation *operation, id responseObject))success
+                                             failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure;
 @end

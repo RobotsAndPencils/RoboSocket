@@ -1,5 +1,5 @@
 //
-//  RBKSTOMPMessage.h
+//  RBKStompFrame.h
 //  RoboSocket
 //
 //  Created by David Anderson on 11/14/2013.
@@ -8,23 +8,23 @@
 
 #import <Foundation/Foundation.h>
 
-extern NSString * const RBKSTOMPVersion1_2;
+extern NSString * const RBKStompVersion1_2;
 
-extern NSString * const RBKSTOMPCommandAbort;
-extern NSString * const RBKSTOMPCommandAck;
-extern NSString * const RBKSTOMPCommandBegin;
-extern NSString * const RBKSTOMPCommandCommit;
-extern NSString * const RBKSTOMPCommandStompConnect;
-extern NSString * const RBKSTOMPCommandConnect;
-extern NSString * const RBKSTOMPCommandConnected;
-extern NSString * const RBKSTOMPCommandDisconnect;
-extern NSString * const RBKSTOMPCommandError;
-extern NSString * const RBKSTOMPCommandMessage;
-extern NSString * const RBKSTOMPCommandNack;
-extern NSString * const RBKSTOMPCommandReceipt;
-extern NSString * const RBKSTOMPCommandSend;
-extern NSString * const RBKSTOMPCommandSubscribe;
-extern NSString * const RBKSTOMPCommandUnsubscribe;
+extern NSString * const RBKStompCommandAbort;
+extern NSString * const RBKStompCommandAck;
+extern NSString * const RBKStompCommandBegin;
+extern NSString * const RBKStompCommandCommit;
+extern NSString * const RBKStompCommandStompConnect;
+extern NSString * const RBKStompCommandConnect;
+extern NSString * const RBKStompCommandConnected;
+extern NSString * const RBKStompCommandDisconnect;
+extern NSString * const RBKStompCommandError;
+extern NSString * const RBKStompCommandMessage;
+extern NSString * const RBKStompCommandNack;
+extern NSString * const RBKStompCommandReceipt;
+extern NSString * const RBKStompCommandSend;
+extern NSString * const RBKStompCommandSubscribe;
+extern NSString * const RBKStompCommandUnsubscribe;
 
 extern NSString * const RBKStompLineFeed;
 extern NSString * const RBKStompNullCharString;
@@ -54,39 +54,39 @@ extern NSString * const RBKStompAckAuto;
 extern NSString * const RBKStompAckClient;
 extern NSString * const RBKStompAckClientIndividual;
 
-struct RBKSTOMPHeartbeat {
+struct RBKStompHeartbeat {
     NSUInteger transmitIntervalMinimum; // 0 for can't send, otherwise smallest number of milliseconds between heart-beats that it can guarantee
     NSUInteger desiredReceptionIntervalMinimum; // 0 for doesn't want, otherwise desired number of milliseconds between heart-beats
 };
-typedef struct RBKSTOMPHeartbeat RBKSTOMPHeartbeat;
+typedef struct RBKStompHeartbeat RBKStompHeartbeat;
 
-@interface RBKSTOMPSubscription : NSObject
+@interface RBKStompSubscription : NSObject
 
 @end
 
-@interface RBKSTOMPMessage : NSObject
+@interface RBKStompFrame : NSObject
 
-@property (nonatomic, strong, readonly) RBKSTOMPSubscription *subscription;
+@property (nonatomic, strong, readonly) RBKStompSubscription *subscription;
 @property (nonatomic, strong, readonly) NSString *command;
 
 
-+ (instancetype)responseMessageFromData:(NSData *)data;
++ (instancetype)responseFrameFromData:(NSData *)data;
 
 #pragma mark - Connect
 
-+ (instancetype)connectMessageWithLogin:(NSString *)login passcode:(NSString *)passcode host:(NSString *)host;
++ (instancetype)connectFrameWithLogin:(NSString *)login passcode:(NSString *)passcode host:(NSString *)host;
 
 #pragma mark - Connected
 
-+ (instancetype)connectedMessageWithVersion:(NSString *)version;
++ (instancetype)connectedFrameWithVersion:(NSString *)version;
 
 #pragma mark - Subscription
 
-+ (instancetype)subscribeMessageWithDestination:(NSString *)destination headers:(NSDictionary *)headers;
++ (instancetype)subscribeFrameWithDestination:(NSString *)destination headers:(NSDictionary *)headers;
 
 #pragma mark - Message
 
-+ (instancetype)messageMessageWithDestination:(NSString *)destination headers:(NSDictionary *)headers body:(NSString *)body subscription:(NSString *)subscription;
++ (instancetype)messageFrameWithDestination:(NSString *)destination headers:(NSDictionary *)headers body:(NSString *)body subscription:(NSString *)subscription;
 
 #pragma mark - Public
 

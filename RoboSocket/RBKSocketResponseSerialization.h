@@ -39,8 +39,8 @@
 
  @return The object decoded from the specified response data.
  */
-- (id)responseObjectForResponseMessage:(id)responseMessage
-                                 error:(NSError *__autoreleasing *)error;
+- (id)responseObjectForResponseFrame:(id)responseFrame
+                               error:(NSError *__autoreleasing *)error;
 
 @end
 
@@ -171,36 +171,6 @@
 
 #pragma mark -
 
-#ifdef __MAC_OS_X_VERSION_MIN_REQUIRED
-
-/**
- `AFXMLDocumentSerializer` is a subclass of `AFHTTPResponseSerializer` that validates and decodes XML responses as an `NSXMLDocument` objects.
-
- By default, `AFXMLDocumentSerializer` accepts the following MIME types, which includes the official standard, `application/xml`, as well as other commonly-used types:
-
- - `application/xml`
- - `text/xml`
- */
-@interface RBKSocketXMLDocumentResponseSerializer : RBKSocketResponseSerializer
-
-/**
- Input and output options specifically intended for `NSXMLDocument` objects. For possible values, see the `NSJSONSerialization` documentation section "NSJSONReadingOptions". `0` by default.
- */
-@property (nonatomic, assign) NSUInteger options;
-
-/**
- Creates and returns an XML document serializer with the specified options.
-
- @param mask The XML document options.
- */
-+ (instancetype)serializerWithXMLDocumentOptions:(NSUInteger)mask;
-
-@end
-
-#endif
-
-#pragma mark -
-
 /**
  `AFPropertyListSerializer` is a subclass of `AFHTTPResponseSerializer` that validates and decodes XML responses as an `NSXMLDocument` objects.
 
@@ -234,10 +204,10 @@
 #pragma mark -
 
 /**
- `RBKSocketSTOMPResponseSerializer` is a subclass of `RBKSocketResponseSerializer` that validates and decodes STOMP responses.
+ `RBKSocketStompResponseSerializer` is a subclass of `RBKSocketResponseSerializer` that validates and decodes STOMP responses.
  
  */
-@interface RBKSocketSTOMPResponseSerializer : RBKSocketResponseSerializer
+@interface RBKSocketStompResponseSerializer : RBKSocketResponseSerializer
 
 /**
  The property list format. Possible values are described in "NSPropertyListFormat".

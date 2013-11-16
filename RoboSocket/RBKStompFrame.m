@@ -1,31 +1,31 @@
 //
-//  RBKSTOMPMessage.m
+//  RBKStompFrame.m
 //  RoboSocket
 //
 //  Created by David Anderson on 11/14/2013.
 //  Copyright (c) 2013 Robots and Pencils Inc. All rights reserved.
 //
 
-#import "RBKSTOMPMessage.h"
+#import "RBKStompFrame.h"
 
-NSString * const RBKSTOMPVersion1_2 = @"1.2";
-// NSString * const RBKSTOMPNoHeartBeat = @"0,0";
+NSString * const RBKStompVersion1_2 = @"1.2";
+// NSString * const RBKStompNoHeartBeat = @"0,0";
 
-NSString * const RBKSTOMPCommandAbort = @"ABORT";
-NSString * const RBKSTOMPCommandAck = @"ACK";
-NSString * const RBKSTOMPCommandBegin = @"BEGIN";
-NSString * const RBKSTOMPCommandCommit = @"COMMIT";
-NSString * const RBKSTOMPCommandStompConnect = @"STOMP"; // v1.2
-NSString * const RBKSTOMPCommandConnect = @"CONNECT"; // pre 1.2
-NSString * const RBKSTOMPCommandConnected = @"CONNECTED";
-NSString * const RBKSTOMPCommandDisconnect = @"DISCONNECT";
-NSString * const RBKSTOMPCommandError = @"ERROR";
-NSString * const RBKSTOMPCommandMessage = @"MESSAGE";
-NSString * const RBKSTOMPCommandNack = @"NACK";
-NSString * const RBKSTOMPCommandReceipt = @"RECEIPT";
-NSString * const RBKSTOMPCommandSend = @"SEND";
-NSString * const RBKSTOMPCommandSubscribe = @"SUBSCRIBE";
-NSString * const RBKSTOMPCommandUnsubscribe = @"UNSUBSCRIBE";
+NSString * const RBKStompCommandAbort = @"ABORT";
+NSString * const RBKStompCommandAck = @"ACK";
+NSString * const RBKStompCommandBegin = @"BEGIN";
+NSString * const RBKStompCommandCommit = @"COMMIT";
+NSString * const RBKStompCommandStompConnect = @"STOMP"; // v1.2
+NSString * const RBKStompCommandConnect = @"CONNECT"; // pre 1.2
+NSString * const RBKStompCommandConnected = @"CONNECTED";
+NSString * const RBKStompCommandDisconnect = @"DISCONNECT";
+NSString * const RBKStompCommandError = @"ERROR";
+NSString * const RBKStompCommandMessage = @"MESSAGE";
+NSString * const RBKStompCommandNack = @"NACK";
+NSString * const RBKStompCommandReceipt = @"RECEIPT";
+NSString * const RBKStompCommandSend = @"SEND";
+NSString * const RBKStompCommandSubscribe = @"SUBSCRIBE";
+NSString * const RBKStompCommandUnsubscribe = @"UNSUBSCRIBE";
 
 // all caps STOMP vs lowercase Stomp
 
@@ -59,26 +59,26 @@ NSString * const RBKStompAckAuto = @"auto"; // the client does not need to send 
 NSString * const RBKStompAckClient = @"client"; // client MUST send the server ACK frames for the messages it processes. If the connection fails before a client sends an ACK frame for the message the server will assume the message has not been processed and MAY redeliver the message to another client. The ACK frames sent by the client will be treated as a cumulative acknowledgment. This means the acknowledgment operates on the message specified in the ACK frame and all messages sent to the subscription before the ACK'ed message.
 NSString * const RBKStompAckClientIndividual = @"client-individual"; // the acknowledgment operates just like the client acknowledgment mode except that the ACK or NACK frames sent by the client are not cumulative. This means that an ACK or NACK frame for a subsequent message MUST NOT cause a previous message to get acknowledged.
 
-const RBKSTOMPHeartbeat RBKSTOMPHeartbeatZero = {0,0};
+const RBKStompHeartbeat RBKStompHeartbeatZero = {0,0};
 
-NSString *NSStringFromSTOMPHeartbeat(RBKSTOMPHeartbeat heartbeat) {
+NSString *NSStringFromStompHeartbeat(RBKStompHeartbeat heartbeat) {
     return [NSString stringWithFormat:@"%d,%d", heartbeat.transmitIntervalMinimum, heartbeat.desiredReceptionIntervalMinimum];
 }
 
-RBKSTOMPHeartbeat RBKSTOMPHeartbeatFromString(NSString *heartbeatString) {
+RBKStompHeartbeat RBKStompHeartbeatFromString(NSString *heartbeatString) {
     
     NSArray *heartbeatComponents = [heartbeatString componentsSeparatedByString:@","];
     if ([heartbeatComponents count] != 2) {
         NSLog(@"invalid heartbeat input");
-        RBKSTOMPHeartbeat heartbeat = {0, 0};
+        RBKStompHeartbeat heartbeat = {0, 0};
         return heartbeat;
     }
-    RBKSTOMPHeartbeat heartbeat = {[[heartbeatComponents firstObject] unsignedIntegerValue], [[heartbeatComponents lastObject] unsignedIntegerValue]};
+    RBKStompHeartbeat heartbeat = {[[heartbeatComponents firstObject] unsignedIntegerValue], [[heartbeatComponents lastObject] unsignedIntegerValue]};
     return heartbeat;
 }
 
 
-@interface RBKSTOMPSubscription ()
+@interface RBKStompSubscription ()
 
 @property (nonatomic, strong) NSString *identifier;
 // message handler?
@@ -86,14 +86,14 @@ RBKSTOMPHeartbeat RBKSTOMPHeartbeatFromString(NSString *heartbeatString) {
 @end
 
 
-@implementation RBKSTOMPSubscription
+@implementation RBKStompSubscription
 
 
-+ (RBKSTOMPSubscription *)subscriptionWithIdentifier:(NSString *)subscriptionIdentifier { // needs a message handler
-    return [[RBKSTOMPSubscription alloc] initSubscriptionWithIdentifier:subscriptionIdentifier];
++ (RBKStompSubscription *)subscriptionWithIdentifier:(NSString *)subscriptionIdentifier { // needs a message handler
+    return [[RBKStompSubscription alloc] initSubscriptionWithIdentifier:subscriptionIdentifier];
 }
 
-- (RBKSTOMPSubscription *)initSubscriptionWithIdentifier:(NSString *)subscriptionIdentifier { // needs a message handler
+- (RBKStompSubscription *)initSubscriptionWithIdentifier:(NSString *)subscriptionIdentifier { // needs a message handler
     self = [super init];
     if (self) {
         _identifier = subscriptionIdentifier;
@@ -105,28 +105,28 @@ RBKSTOMPHeartbeat RBKSTOMPHeartbeatFromString(NSString *heartbeatString) {
 @end
 
 
-@interface RBKSTOMPMessage ()
+@interface RBKStompFrame ()
 
 @property (nonatomic, strong) NSString *destination;
 @property (nonatomic, strong) NSDictionary *headers;
 @property (nonatomic, strong) NSString *command;
 @property (nonatomic, strong) NSString *body;
 
-@property (nonatomic, strong, readwrite) RBKSTOMPSubscription *subscription;
+@property (nonatomic, strong, readwrite) RBKStompSubscription *subscription;
 
 @end
 
 static NSUInteger headerIdentifier;
 static NSUInteger messageIdentifier;
 
-@implementation RBKSTOMPMessage
+@implementation RBKStompFrame
 
-+ (instancetype)responseMessageFromData:(NSData *)data {
++ (instancetype)responseFrameFromData:(NSData *)data {
 
-    NSString *messageAsString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-    NSLog(@"<<<\n%@", messageAsString);
+    NSString *frameAsString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    NSLog(@"<<<\n%@", frameAsString);
     
-    NSMutableArray *contents = [[messageAsString componentsSeparatedByString:RBKStompLineFeed] mutableCopy];
+    NSMutableArray *contents = [[frameAsString componentsSeparatedByString:RBKStompLineFeed] mutableCopy];
     // skip initial if its an empty string
     if ([[contents firstObject] isEqualToString:@""]) {
         [contents removeObject:[contents firstObject]];
@@ -163,10 +163,10 @@ static NSUInteger messageIdentifier;
         }
     }
     
-    return [[RBKSTOMPMessage alloc] initMessageWithCommand:command headers:headers body:body];
+    return [[RBKStompFrame alloc] initFrameWithCommand:command headers:headers body:body];
 }
 
-- (instancetype)initMessageWithCommand:(NSString *)command headers:(NSDictionary *)headers body:(NSString *)body {
+- (instancetype)initFrameWithCommand:(NSString *)command headers:(NSDictionary *)headers body:(NSString *)body {
     self = [super init];
     if (self) {
         _command = command;
@@ -179,60 +179,60 @@ static NSUInteger messageIdentifier;
 
 #pragma mark - Connect
 
-+ (instancetype)connectMessageWithLogin:(NSString *)login passcode:(NSString *)passcode host:(NSString *)host { // heartbeat?  handlers?
++ (instancetype)connectFrameWithLogin:(NSString *)login passcode:(NSString *)passcode host:(NSString *)host { // heartbeat?  handlers?
     
-    return [RBKSTOMPMessage connectMessageHeaders:@{RBKStompHeaderLogin: login, RBKStompHeaderPasscode: passcode, RBKStompHeaderHost: host}];
+    return [RBKStompFrame connectMessageHeaders:@{RBKStompHeaderLogin: login, RBKStompHeaderPasscode: passcode, RBKStompHeaderHost: host}];
 }
 
 + (instancetype)connectMessageHeaders:(NSDictionary *)headers { // heartbeat?
     
-    return [[RBKSTOMPMessage alloc] initConnectMessageHeaders:headers];
+    return [[RBKStompFrame alloc] initConnectMessageHeaders:headers];
 }
 
 - (instancetype)initConnectMessageHeaders:(NSDictionary *)headers {
     NSMutableDictionary *connectHeaders = [NSMutableDictionary dictionaryWithDictionary:headers];
-    connectHeaders[RBKStompHeaderAcceptVersion] = RBKSTOMPVersion1_2;
+    connectHeaders[RBKStompHeaderAcceptVersion] = RBKStompVersion1_2;
     
     if (!connectHeaders[RBKStompHeaderHeartBeat]) {
-        connectHeaders[RBKStompHeaderHeartBeat] = NSStringFromSTOMPHeartbeat(RBKSTOMPHeartbeatZero); // no heart beat
+        connectHeaders[RBKStompHeaderHeartBeat] = NSStringFromStompHeartbeat(RBKStompHeartbeatZero); // no heart beat
     }
 
-    return [[RBKSTOMPMessage alloc] initMessageWithCommand:RBKSTOMPCommandStompConnect headers:connectHeaders body:nil];
+    return [[RBKStompFrame alloc] initFrameWithCommand:RBKStompCommandStompConnect headers:connectHeaders body:nil];
 }
 
 
 #pragma mark - Connected
 
-+ (instancetype)connectedMessageWithVersion:(NSString *)version {
++ (instancetype)connectedFrameWithVersion:(NSString *)version {
     
-    return [RBKSTOMPMessage connectedMessageWithHeaders:@{RBKStompHeaderVersion: version}];
+    return [RBKStompFrame connectedMessageWithHeaders:@{RBKStompHeaderVersion: version}];
 }
 
 + (instancetype)connectedMessageWithHeaders:(NSDictionary *)headers {
     
-    return [[RBKSTOMPMessage alloc] initConnectedMessageWithHeaders:headers];
+    return [[RBKStompFrame alloc] initConnectedMessageWithHeaders:headers];
 }
 
 - (instancetype)initConnectedMessageWithHeaders:(NSDictionary *)headers {
     NSMutableDictionary *connectHeaders = [NSMutableDictionary dictionaryWithDictionary:headers];
     
     if (!connectHeaders[RBKStompHeaderVersion]) {
-        connectHeaders[RBKStompHeaderVersion] = RBKSTOMPVersion1_2;
+        connectHeaders[RBKStompHeaderVersion] = RBKStompVersion1_2;
     }
     
     if (!connectHeaders[RBKStompHeaderHeartBeat]) {
-        connectHeaders[RBKStompHeaderHeartBeat] = NSStringFromSTOMPHeartbeat(RBKSTOMPHeartbeatZero); // no heart beat
+        connectHeaders[RBKStompHeaderHeartBeat] = NSStringFromStompHeartbeat(RBKStompHeartbeatZero); // no heart beat
     }
     
-    return [[RBKSTOMPMessage alloc] initMessageWithCommand:RBKSTOMPCommandConnected headers:connectHeaders body:nil];
+    return [[RBKStompFrame alloc] initFrameWithCommand:RBKStompCommandConnected headers:connectHeaders body:nil];
 }
 
 
 
 #pragma mark - Subscription
 
-+ (instancetype)subscribeMessageWithDestination:(NSString *)destination headers:(NSDictionary *)headers { // messageHandler
-    return [[RBKSTOMPMessage alloc] initSubscribeMessageWithDestination:destination headers:headers];
++ (instancetype)subscribeFrameWithDestination:(NSString *)destination headers:(NSDictionary *)headers { // messageHandler
+    return [[RBKStompFrame alloc] initSubscribeMessageWithDestination:destination headers:headers];
 }
 
 - (instancetype)initSubscribeMessageWithDestination:(NSString *)destination headers:(NSDictionary *)headers {
@@ -250,12 +250,12 @@ static NSUInteger messageIdentifier;
         mutableHeaders[RBKStompHeaderID] = identifier;
     }
 
-    self = [self initMessageWithCommand:RBKSTOMPCommandSubscribe headers:mutableHeaders body:nil];
+    self = [self initFrameWithCommand:RBKStompCommandSubscribe headers:mutableHeaders body:nil];
     if (self) {
         _destination = destination; // might not need to store this, its in the header
         
         // self.subscriptions[identifier] = handler; // what does the scope of this handler need to be?
-        _subscription = [RBKSTOMPSubscription subscriptionWithIdentifier:identifier];
+        _subscription = [RBKStompSubscription subscriptionWithIdentifier:identifier];
     }
     
     return self;
@@ -263,11 +263,11 @@ static NSUInteger messageIdentifier;
 
 #pragma mark - Message
 
-+ (instancetype)messageMessageWithDestination:(NSString *)destination headers:(NSDictionary *)headers body:(NSString *)body subscription:(NSString *)subscription { // messageHandler
-    return [[RBKSTOMPMessage alloc] initMessageMessageWithDestination:destination headers:headers body:body subscription:subscription];
++ (instancetype)messageFrameWithDestination:(NSString *)destination headers:(NSDictionary *)headers body:(NSString *)body subscription:(NSString *)subscription { // messageHandler
+    return [[RBKStompFrame alloc] initMessageFrameWithDestination:destination headers:headers body:body subscription:subscription];
 }
 
-- (instancetype)initMessageMessageWithDestination:(NSString *)destination headers:(NSDictionary *)headers body:(NSString *)body subscription:(NSString *)subscription {
+- (instancetype)initMessageFrameWithDestination:(NSString *)destination headers:(NSDictionary *)headers body:(NSString *)body subscription:(NSString *)subscription {
     
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
@@ -284,7 +284,7 @@ static NSUInteger messageIdentifier;
         mutableHeaders[RBKStompHeaderMessageID] = identifier;
     }
     
-    self = [self initMessageWithCommand:RBKSTOMPCommandMessage headers:mutableHeaders body:body];
+    self = [self initFrameWithCommand:RBKStompCommandMessage headers:mutableHeaders body:body];
     
     return self;
 }
@@ -337,9 +337,9 @@ static NSUInteger messageIdentifier;
 
 -(BOOL)commandPermitsBody:(NSString *)command {
     // Only the SEND, MESSAGE, and ERROR frames MAY have a body. All other frames MUST NOT have a body.
-    if ([command isEqualToString:RBKSTOMPCommandSend] ||
-        [command isEqualToString:RBKSTOMPCommandMessage] ||
-        [command isEqualToString:RBKSTOMPCommandError]) {
+    if ([command isEqualToString:RBKStompCommandSend] ||
+        [command isEqualToString:RBKStompCommandMessage] ||
+        [command isEqualToString:RBKStompCommandError]) {
         return YES;
     }
     return NO;

@@ -22,7 +22,7 @@
 
 #import "RBKSocketRequestSerialization.h"
 #import "RBKSocketOperation.h"
-#import "RBKSTOMPMessage.h"
+#import "RBKStompFrame.h"
 
 typedef NSString * (^AFQueryStringSerializationBlock)(NSURLRequest *request, NSDictionary *parameters, NSError *__autoreleasing *error);
 
@@ -253,9 +253,9 @@ NSArray * AFQueryStringPairsFromKeyAndValue(NSString *key, id value) {
 
 #pragma mark -
 
-- (RBKSocketOperation *)requestOperationWithMessage:(id)message {
-    RBKSocketOperation *request = [[RBKSocketOperation alloc] initWithRequestMessage:message];
-    NSParameterAssert(message);
+- (RBKSocketOperation *)requestOperationWithFrame:(id)frame {
+    RBKSocketOperation *request = [[RBKSocketOperation alloc] initWithRequestFrame:frame];
+    NSParameterAssert(frame);
 
     request = [self requestBySerializingRequest:request withParameters:nil error:nil];
     
@@ -991,19 +991,19 @@ typedef enum {
 {
     NSParameterAssert(request);
     
-    id message = request.requestMessage;
+    id frame = request.requestFrame;
     
-    if ([message isKindOfClass:[NSString class]]) {
+    if ([frame isKindOfClass:[NSString class]]) {
         return request;
     }
     
-    if ([message isKindOfClass:[NSData class]]) {
-        NSString *messageAsString = [[NSString alloc] initWithData:message encoding:NSUTF8StringEncoding];;
-        return [[RBKSocketOperation alloc] initWithRequestMessage:messageAsString];
+    if ([frame isKindOfClass:[NSData class]]) {
+        NSString *frameAsString = [[NSString alloc] initWithData:frame encoding:NSUTF8StringEncoding];;
+        return [[RBKSocketOperation alloc] initWithRequestFrame:frameAsString];
     }
     
     // not sure how to (or if we should) coerce other formats into a string
-    NSLog(@"Unsupported request message type %@ for serialization as a string", NSStringFromClass([message class]));
+    NSLog(@"Unsupported request frame type %@ for serialization as a string", NSStringFromClass([frame class]));
     return nil;
 }
 
@@ -1038,19 +1038,19 @@ typedef enum {
 {
     NSParameterAssert(request);
     
-    id message = request.requestMessage;
+    id frame = request.requestFrame;
     
-    if ([message isKindOfClass:[NSData class]]) {
+    if ([frame isKindOfClass:[NSData class]]) {
         return request;
     }
     
-    if ([message isKindOfClass:[NSString class]]) {
-        NSData *messageAsData = [message dataUsingEncoding:NSUTF8StringEncoding];
-        return [[RBKSocketOperation alloc] initWithRequestMessage:messageAsData];
+    if ([frame isKindOfClass:[NSString class]]) {
+        NSData *frameAsData = [frame dataUsingEncoding:NSUTF8StringEncoding];
+        return [[RBKSocketOperation alloc] initWithRequestFrame:frameAsData];
     }
     
     // not sure how to (or if we should) coerce other formats into a string
-    NSLog(@"Unsupported request message type %@ for serialization as data", NSStringFromClass([message class]));
+    NSLog(@"Unsupported request frame type %@ for serialization as data", NSStringFromClass([frame class]));
     return nil;
 }
 
@@ -1087,16 +1087,16 @@ typedef enum {
 {
     NSParameterAssert(request);
 
-    id message = request.requestMessage;
+    id frame = request.requestFrame;
     
-    if (![message isKindOfClass:[NSDictionary class]]) {
+    if (![frame isKindOfClass:[NSDictionary class]]) {
         // not sure how to (or if we should) coerce other formats into a JSON
-        NSLog(@"Unsupported request message type %@ for serialization as JSON", NSStringFromClass([message class]));
+        NSLog(@"Unsupported request frame type %@ for serialization as JSON", NSStringFromClass([frame class]));
         return nil;
     }
 
-    NSData *messageAsJSONData = [NSJSONSerialization dataWithJSONObject:message options:self.writingOptions error:error];
-    return [[RBKSocketOperation alloc] initWithRequestMessage:messageAsJSONData];
+    NSData *frameAsJSONData = [NSJSONSerialization dataWithJSONObject:frame options:self.writingOptions error:error];
+    return [[RBKSocketOperation alloc] initWithRequestFrame:frameAsJSONData];
 }
 
 @end
@@ -1191,7 +1191,7 @@ typedef enum {
 
 #pragma mark -
 
-@implementation RBKSocketSTOMPRequestSerializer
+@implementation RBKSocketStompRequestSerializer
 
 + (instancetype)serializer {
     return [self serializerWithWritingOptions:0];
@@ -1199,7 +1199,7 @@ typedef enum {
 
 + (instancetype)serializerWithWritingOptions:(NSUInteger)writingOptions
 {
-    RBKSocketSTOMPRequestSerializer *serializer = [[self alloc] init];
+    RBKSocketStompRequestSerializer *serializer = [[self alloc] init];
     serializer.writingOptions = writingOptions;
     
     return serializer;
@@ -1213,18 +1213,18 @@ typedef enum {
 {
     NSParameterAssert(request);
     
-    id message = request.requestMessage;
+    id frame = request.requestFrame;
     
-    if (![message isKindOfClass:[RBKSTOMPMessage class]]) {
+    if (![frame isKindOfClass:[RBKStompFrame class]]) {
         // not sure how to (or if we should) coerce other formats into a JSON
-        NSLog(@"Unsupported request message type %@ for serialization as JSON", NSStringFromClass([message class]));
+        NSLog(@"Unsupported request frame type %@ for serialization as JSON", NSStringFromClass([frame class]));
         return nil;
     }
     
-    RBKSTOMPMessage *stompMessage = (RBKSTOMPMessage *)message;
+    RBKStompFrame *stompFrame = (RBKStompFrame *)frame;
     
-    NSData *messageAsData = [stompMessage frameData];
-    return [[RBKSocketOperation alloc] initWithRequestMessage:messageAsData];    
+    NSData *frameAsData = [stompFrame frameData];
+    return [[RBKSocketOperation alloc] initWithRequestFrame:frameAsData];    
 }
 
 @end

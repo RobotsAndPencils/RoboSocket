@@ -148,9 +148,9 @@ typedef NS_ENUM(NSUInteger, RBKSocketRequestQueryStringSerializationStyle) {
 /**
  Creates `RBKSocketOperation` 
  
- @param message The message to be sent within a websocket frame
+ @param frame The frame to be sent within a websocket frame
  */
-- (RBKSocketOperation *)requestOperationWithMessage:(id)message;
+- (RBKSocketOperation *)requestOperationWithFrame:(id)frame;
 
 
 @end
@@ -365,7 +365,7 @@ extern NSTimeInterval const kAFUploadStream3GSuggestedDelay;
 
 @end
 
-@interface RBKSocketSTOMPRequestSerializer : RBKSocketRequestSerializer
+@interface RBKSocketStompRequestSerializer : RBKSocketRequestSerializer
 
 /**
  The property list format. Possible values are described in "NSPropertyListFormat".

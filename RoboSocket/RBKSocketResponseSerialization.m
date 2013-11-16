@@ -21,7 +21,7 @@
 // THE SOFTWARE.
 
 #import "RBKSocketResponseSerialization.h"
-#import "RBKSTOMPMessage.h"
+#import "RBKStompFrame.h"
 
 extern NSString * const RBKSocketNetworkingErrorDomain;
 extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
@@ -93,12 +93,12 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
 
 #pragma mark - RBKSocketResponseSerialization
 
-- (id)responseObjectForResponseMessage:(id)responseMessage
-                                 error:(NSError *__autoreleasing *)error
+- (id)responseObjectForResponseFrame:(id)responseFrame
+                               error:(NSError *__autoreleasing *)error
 {
-    [self validateResponse:nil data:responseMessage error:error];
+    [self validateResponse:nil data:responseFrame error:error];
 
-    return responseMessage;
+    return responseFrame;
 }
 
 #pragma mark - NSCoding
@@ -163,30 +163,30 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
 
 #pragma mark - RBKSocketRequestSerialization
 
-- (id)responseObjectForResponseMessage:(id)responseMessage
-                                 error:(NSError *__autoreleasing *)error
+- (id)responseObjectForResponseFrame:(id)responseFrame
+                               error:(NSError *__autoreleasing *)error
 {
-    if (![self validateResponse:nil data:responseMessage error:error]) {
+    if (![self validateResponse:nil data:responseFrame error:error]) {
         if ([(NSError *)(*error) code] == NSURLErrorCannotDecodeContentData) {
             return nil;
         }
     }
     
-    if (!responseMessage) {
-        NSLog(@"Did not receive response message");
+    if (!responseFrame) {
+        NSLog(@"Did not receive response frame");
         return nil;
     }
     
-    if ([responseMessage isKindOfClass:[NSString class]]) {
-        return responseMessage;
+    if ([responseFrame isKindOfClass:[NSString class]]) {
+        return responseFrame;
     }
 
-    if ([responseMessage isKindOfClass:[NSData class]]) {
-        NSString *responseString = [[NSString alloc] initWithData:responseMessage encoding:NSUTF8StringEncoding];
+    if ([responseFrame isKindOfClass:[NSData class]]) {
+        NSString *responseString = [[NSString alloc] initWithData:responseFrame encoding:NSUTF8StringEncoding];
         return responseString;
     }
     
-    NSLog(@"Unsupported response message type %@ for serialization as string", NSStringFromClass([responseMessage class]));
+    NSLog(@"Unsupported response frame type %@ for serialization as string", NSStringFromClass([responseFrame class]));
     return nil;
 }
 
@@ -252,33 +252,33 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
 
 #pragma mark - RBKSocketRequestSerialization
 
-- (id)responseObjectForResponseMessage:(id)responseMessage
-                                 error:(NSError *__autoreleasing *)error
+- (id)responseObjectForResponseFrame:(id)responseFrame
+                               error:(NSError *__autoreleasing *)error
 {
-    if (![self validateResponse:nil data:responseMessage error:error]) {
+    if (![self validateResponse:nil data:responseFrame error:error]) {
         if ([(NSError *)(*error) code] == NSURLErrorCannotDecodeContentData) {
             return nil;
         }
     }
     
-    if (!responseMessage) {
-        NSLog(@"Did not receive response message");
+    if (!responseFrame) {
+        NSLog(@"Did not receive response frame");
         return nil;
     }
     
-    if ([responseMessage isKindOfClass:[NSString class]]) {
-        return [responseMessage dataUsingEncoding:NSUTF8StringEncoding];
+    if ([responseFrame isKindOfClass:[NSString class]]) {
+        return [responseFrame dataUsingEncoding:NSUTF8StringEncoding];
     }
     
-    if ([responseMessage isKindOfClass:[NSData class]]) {
-        if ([responseMessage length] <= 0) {
-            NSLog(@"Did received response message of 0 length");
+    if ([responseFrame isKindOfClass:[NSData class]]) {
+        if ([responseFrame length] <= 0) {
+            NSLog(@"Did received response frame of 0 length");
             return nil;
         }
-        return responseMessage;
+        return responseFrame;
     }
 
-    NSLog(@"Unsupported response message type %@ for serialization as data", NSStringFromClass([responseMessage class]));
+    NSLog(@"Unsupported response frame type %@ for serialization as data", NSStringFromClass([responseFrame class]));
     return nil;
 }
 
@@ -354,24 +354,24 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
 
 #pragma mark - RBKSocketRequestSerialization
 
-- (id)responseObjectForResponseMessage:(id)responseMessage
-                                 error:(NSError *__autoreleasing *)error
+- (id)responseObjectForResponseFrame:(id)responseFrame
+                               error:(NSError *__autoreleasing *)error
 {
-    if (![self validateResponse:nil data:responseMessage error:error]) {
+    if (![self validateResponse:nil data:responseFrame error:error]) {
         if ([(NSError *)(*error) code] == NSURLErrorCannotDecodeContentData) {
             return nil;
         }
     }
     
-    NSString *responseString = [[NSString alloc] initWithData:responseMessage encoding:NSUTF8StringEncoding];
+    NSString *responseString = [[NSString alloc] initWithData:responseFrame encoding:NSUTF8StringEncoding];
     if (responseString && ![responseString isEqualToString:@" "]) {
         // Workaround for a bug in NSJSONSerialization when Unicode character escape codes are used instead of the actual character
         // See http://stackoverflow.com/a/12843465/157142
-        responseMessage = [responseString dataUsingEncoding:NSUTF8StringEncoding];
+        responseFrame = [responseString dataUsingEncoding:NSUTF8StringEncoding];
 
-        if (responseMessage) {
-            if ([responseMessage length] > 0) {
-                return [NSJSONSerialization JSONObjectWithData:responseMessage options:self.readingOptions error:error];
+        if (responseFrame) {
+            if ([responseFrame length] > 0) {
+                return [NSJSONSerialization JSONObjectWithData:responseFrame options:self.readingOptions error:error];
             } else {
                 return nil;
             }
@@ -439,91 +439,19 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
 
 #pragma mark - RBKSocketURLResponseSerialization
 
-- (id)responseObjectForResponseMessage:(id)responseMessage
-                                 error:(NSError *__autoreleasing *)error
+- (id)responseObjectForResponseFrame:(id)responseFrame
+                               error:(NSError *__autoreleasing *)error
 {
-    if (![self validateResponse:nil data:responseMessage error:error]) {
+    if (![self validateResponse:nil data:responseFrame error:error]) {
         if ([(NSError *)(*error) code] == NSURLErrorCannotDecodeContentData) {
             return nil;
         }
     }
 
-    return [[NSXMLParser alloc] initWithData:responseMessage];
+    return [[NSXMLParser alloc] initWithData:responseFrame];
 }
 
 @end
-
-#pragma mark -
-
-#ifdef __MAC_OS_X_VERSION_MIN_REQUIRED
-
-@implementation AFXMLDocumentResponseSerializer
-
-+ (instancetype)serializer {
-    return [self serializerWithXMLDocumentOptions:0];
-}
-
-+ (instancetype)serializerWithXMLDocumentOptions:(NSUInteger)mask {
-    AFXMLDocumentResponseSerializer *serializer = [[self alloc] init];
-    serializer.options = mask;
-
-    return serializer;
-}
-
-- (instancetype)init {
-    self = [super init];
-    if (!self) {
-        return nil;
-    }
-
-    return self;
-}
-
-#pragma mark - RBKSocketURLResponseSerialization
-
-- (id)responseObjectForResponseMessage:(id)responseMessage
-                                 error:(NSError *__autoreleasing *)error
-{
-    if (![self validateResponse:nil data:responseMessage error:error]) {
-        if ([(NSError *)(*error) code] == NSURLErrorCannotDecodeContentData) {
-            return nil;
-        }
-    }
-
-    return [[NSXMLDocument alloc] initWithData:data options:self.options error:error];
-}
-
-#pragma mark - NSCoding
-
-- (id)initWithCoder:(NSCoder *)decoder {
-    self = [super initWithCoder:decoder];
-    if (!self) {
-        return nil;
-    }
-
-    self.options = [decoder decodeIntegerForKey:NSStringFromSelector(@selector(options))];
-
-    return self;
-}
-
-- (void)encodeWithCoder:(NSCoder *)coder {
-    [super encodeWithCoder:coder];
-
-    [coder encodeInteger:self.options forKey:NSStringFromSelector(@selector(options))];
-}
-
-#pragma mark - NSCopying
-
-- (id)copyWithZone:(NSZone *)zone {
-    AFXMLDocumentResponseSerializer *serializer = [[[self class] allocWithZone:zone] init];
-    serializer.options = self.options;
-
-    return serializer;
-}
-
-@end
-
-#endif
 
 #pragma mark -
 
@@ -564,16 +492,16 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
 
 #pragma mark - AFURLResponseSerialization
 
-- (id)responseObjectForResponseMessage:(id)responseMessage
-                                 error:(NSError *__autoreleasing *)error
+- (id)responseObjectForResponseFrame:(id)responseFrame
+                               error:(NSError *__autoreleasing *)error
 {
-    if (![self validateResponse:nil data:responseMessage error:error]) {
+    if (![self validateResponse:nil data:responseFrame error:error]) {
         if ([(NSError *)(*error) code] == NSURLErrorCannotDecodeContentData) {
             return nil;
         }
     }
 
-    return [NSPropertyListSerialization propertyListWithData:responseMessage options:self.readOptions format:NULL error:error];
+    return [NSPropertyListSerialization propertyListWithData:responseFrame options:self.readOptions format:NULL error:error];
 }
 
 #pragma mark - NSCoding
@@ -611,14 +539,14 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
 
 #pragma mark -
 
-@implementation RBKSocketSTOMPResponseSerializer
+@implementation RBKSocketStompResponseSerializer
 
 + (instancetype)serializer {
     return [self serializerWithReadingOptions:0];
 }
 
 + (instancetype)serializerWithReadingOptions:(NSUInteger)readingOptions {
-    RBKSocketSTOMPResponseSerializer *serializer = [[self alloc] init];
+    RBKSocketStompResponseSerializer *serializer = [[self alloc] init];
     serializer.readingOptions = readingOptions;
     
     return serializer;
@@ -635,30 +563,30 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
 
 #pragma mark - RBKSocketRequestSerialization
 
-- (id)responseObjectForResponseMessage:(id)responseMessage
-                                 error:(NSError *__autoreleasing *)error
+- (id)responseObjectForResponseFrame:(id)responseFrame
+                               error:(NSError *__autoreleasing *)error
 {
-    if (![self validateResponse:nil data:responseMessage error:error]) {
+    if (![self validateResponse:nil data:responseFrame error:error]) {
         if ([(NSError *)(*error) code] == NSURLErrorCannotDecodeContentData) {
             return nil;
         }
     }
     
-    if (!responseMessage) {
-        NSLog(@"Did not receive response message");
+    if (!responseFrame) {
+        NSLog(@"Did not receive response frame");
         return nil;
     }
     
-    if ([responseMessage isKindOfClass:[NSString class]]) {
-        responseMessage = [responseMessage dataUsingEncoding:NSUTF8StringEncoding];
+    if ([responseFrame isKindOfClass:[NSString class]]) {
+        responseFrame = [responseFrame dataUsingEncoding:NSUTF8StringEncoding];
     }
     
-    if (![responseMessage isKindOfClass:[NSData class]]) {
-        NSLog(@"Unsupported response message type %@ for serialization as data", NSStringFromClass([responseMessage class]));
+    if (![responseFrame isKindOfClass:[NSData class]]) {
+        NSLog(@"Unsupported response frame type %@ for serialization as data", NSStringFromClass([responseFrame class]));
         return nil;
     }
     
-    return [RBKSTOMPMessage responseMessageFromData:responseMessage];
+    return [RBKStompFrame responseFrameFromData:responseFrame];
 }
 
 #pragma mark - NSCoding

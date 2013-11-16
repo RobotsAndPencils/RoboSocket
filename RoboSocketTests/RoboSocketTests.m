@@ -14,15 +14,15 @@
 #import "RBKSocketManager.h"
 #import "RBKSocketRequestSerialization.h"
 #import "RBKSocketResponseSerialization.h"
-#import "RBKSTOMPMessage.h"
+#import "RBKStompFrame.h"
 
 #import <SocketRocket/SRServerSocket.h>
 #import <SocketRocket/SRWebSocket.h>
 
 typedef NS_ENUM(NSUInteger, RBKTestScenario) {
     RBKTestScenarioNone = 0,
-    RBKTestScenarioSTOMPConnect,
-    RBKTestScenarioSTOMPSubscribe,
+    RBKTestScenarioStompConnect,
+    RBKTestScenarioStompSubscribe,
 };
 
 
@@ -74,7 +74,7 @@ NSString * const hostURL = @"ws://localhost";
     __block BOOL success = NO;
     NSString *sentMessage = @"Hello, World!";
     __block NSString *responseMessage = nil;
-    [self.socketManager sendSocketOperationWithMessage:sentMessage success:^(RBKSocketOperation *operation, id responseObject) {
+    [self.socketManager sendSocketOperationWithFrame:sentMessage success:^(RBKSocketOperation *operation, id responseObject) {
         success = YES;
         responseMessage = responseObject;
     } failure:^(RBKSocketOperation *operation, NSError *error) {
@@ -90,7 +90,7 @@ NSString * const hostURL = @"ws://localhost";
     NSString *stringMessage = @"Hello, World!";
     NSData *sentMessage = [stringMessage dataUsingEncoding:NSUTF8StringEncoding];
     __block NSData *responseMessage = nil;
-    [self.socketManager sendSocketOperationWithMessage:sentMessage success:^(RBKSocketOperation *operation, id responseObject) {
+    [self.socketManager sendSocketOperationWithFrame:sentMessage success:^(RBKSocketOperation *operation, id responseObject) {
         success = YES;
         responseMessage = responseObject;
     } failure:^(RBKSocketOperation *operation, NSError *error) {
@@ -110,7 +110,7 @@ NSString * const hostURL = @"ws://localhost";
     NSString *stringMessage = @"Hello, World!";
     NSData *sentMessage = [stringMessage dataUsingEncoding:NSUTF8StringEncoding];
     __block NSData *responseMessage = nil;
-    [self.socketManager sendSocketOperationWithMessage:sentMessage success:^(RBKSocketOperation *operation, id responseObject) {
+    [self.socketManager sendSocketOperationWithFrame:sentMessage success:^(RBKSocketOperation *operation, id responseObject) {
         success = YES;
         responseMessage = responseObject;
     } failure:^(RBKSocketOperation *operation, NSError *error) {
@@ -130,7 +130,7 @@ NSString * const hostURL = @"ws://localhost";
     NSString *sentMessage = @"Hello, World!";
     NSData *dataMessage = [sentMessage dataUsingEncoding:NSUTF8StringEncoding];
     __block NSData *responseMessage = nil;
-    [self.socketManager sendSocketOperationWithMessage:sentMessage success:^(RBKSocketOperation *operation, id responseObject) {
+    [self.socketManager sendSocketOperationWithFrame:sentMessage success:^(RBKSocketOperation *operation, id responseObject) {
         success = YES;
         responseMessage = responseObject;
     } failure:^(RBKSocketOperation *operation, NSError *error) {
@@ -150,7 +150,7 @@ NSString * const hostURL = @"ws://localhost";
     __block BOOL success = NO;
     NSDictionary *sentMessage = @{@"key": @"value"};
     __block NSDictionary *responseMessage = nil;
-    [self.socketManager sendSocketOperationWithMessage:sentMessage success:^(RBKSocketOperation *operation, id responseObject) {
+    [self.socketManager sendSocketOperationWithFrame:sentMessage success:^(RBKSocketOperation *operation, id responseObject) {
         success = YES;
         responseMessage = responseObject;
     } failure:^(RBKSocketOperation *operation, NSError *error) {
@@ -168,25 +168,25 @@ NSString * const hostURL = @"ws://localhost";
 
 - (void)testSocketEchoSTOMPConnect {
     
-    self.currentScenario = RBKTestScenarioSTOMPConnect;
+    self.currentScenario = RBKTestScenarioStompConnect;
 
-    self.socketManager.requestSerializer = [RBKSocketSTOMPRequestSerializer serializer];
-    self.socketManager.responseSerializer = [RBKSocketSTOMPResponseSerializer serializer];
+    self.socketManager.requestSerializer = [RBKSocketStompRequestSerializer serializer];
+    self.socketManager.responseSerializer = [RBKSocketStompResponseSerializer serializer];
     
-    RBKSTOMPMessage *connectMessage = [RBKSTOMPMessage connectMessageWithLogin:@"username" passcode:@"passcode" host:[[NSURL URLWithString:hostURL] host]];
+    RBKStompFrame *connectMessage = [RBKStompFrame connectFrameWithLogin:@"username" passcode:@"passcode" host:[[NSURL URLWithString:hostURL] host]];
     
     __block BOOL success = NO;
-    __block RBKSTOMPMessage *responseMessage = nil;
-    [self.socketManager sendSocketOperationWithMessage:connectMessage success:^(RBKSocketOperation *operation, id responseObject) {
+    __block RBKStompFrame *responseMessage = nil;
+    [self.socketManager sendSocketOperationWithFrame:connectMessage success:^(RBKSocketOperation *operation, id responseObject) {
         success = YES;
-        responseMessage = responseObject; // probably isn't echo'd per the standard, but this at least validates the conversion to/from RBKSTOMPMessage
+        responseMessage = responseObject; // probably isn't echo'd per the standard, but this at least validates the conversion to/from RBKStompMessage
     } failure:^(RBKSocketOperation *operation, NSError *error) {
         success = NO;
     }];
     expect(success).will.beTruthy();
     expect([responseMessage frameData]).willNot.equal([connectMessage frameData]); // connect message should get connection response
-    expect(responseMessage.command).will.equal(RBKSTOMPCommandConnected);
-    expect([responseMessage headerValueForKey:RBKStompHeaderVersion]).will.equal(RBKSTOMPVersion1_2);
+    expect(responseMessage.command).will.equal(RBKStompCommandConnected);
+    expect([responseMessage headerValueForKey:RBKStompHeaderVersion]).will.equal(RBKStompVersion1_2);
 }
 
 // Connection:
@@ -195,21 +195,21 @@ NSString * const hostURL = @"ws://localhost";
 
 - (void)testSocketEchoSTOMPSubscribe {
     
-    self.currentScenario = RBKTestScenarioSTOMPSubscribe;
+    self.currentScenario = RBKTestScenarioStompSubscribe;
 
-    self.socketManager.requestSerializer = [RBKSocketSTOMPRequestSerializer serializer];
-    self.socketManager.responseSerializer = [RBKSocketSTOMPResponseSerializer serializer];
+    self.socketManager.requestSerializer = [RBKSocketStompRequestSerializer serializer];
+    self.socketManager.responseSerializer = [RBKSocketStompResponseSerializer serializer];
     
-    RBKSTOMPMessage *subscriptionMessage = [RBKSTOMPMessage subscribeMessageWithDestination:@"/foo/bar" headers:@{@"x-test": @"12345"}];
+    RBKStompFrame *subscriptionMessage = [RBKStompFrame subscribeFrameWithDestination:@"/foo/bar" headers:@{@"x-test": @"12345"}];
     
     __block BOOL success = NO;
-    __block RBKSTOMPMessage *responseMessage = nil;
-    [self.socketManager sendSocketOperationWithMessage:subscriptionMessage success:^(RBKSocketOperation *operation, id responseObject) {
+    __block RBKStompFrame *responseMessage = nil;
+    [self.socketManager sendSocketOperationWithFrame:subscriptionMessage success:^(RBKSocketOperation *operation, id responseObject) {
         success = YES;
         
         // subscriptions arent' echoed per the standard. Send a message that matches the subscription
         
-        responseMessage = responseObject; // probably isn't echo'd per the standard, but this at least validates the conversion to/from RBKSTOMPMessage
+        responseMessage = responseObject; // probably isn't echo'd per the standard, but this at least validates the conversion to/from RBKStompMessage
     } failure:^(RBKSocketOperation *operation, NSError *error) {
         success = NO;
     }];
@@ -232,11 +232,11 @@ NSString * const hostURL = @"ws://localhost";
     NSLog(@"Received message %@", message);
     // specific responses
     switch (self.currentScenario) {
-        case RBKTestScenarioSTOMPConnect:
+        case RBKTestScenarioStompConnect:
             [webSocket send:[[self connectedMessageForConnectMessageData:message] frameData]];
             return;
 
-        case RBKTestScenarioSTOMPSubscribe:
+        case RBKTestScenarioStompSubscribe:
             [webSocket send:[[self messageMessage:@"Message for you sir" forSubscribeMessageData:message] frameData]];
             return;
 
@@ -268,22 +268,22 @@ NSString * const hostURL = @"ws://localhost";
 
 #pragma mark - STOMP Response Messages
 
-- (RBKSTOMPMessage *)connectedMessageForConnectMessageData:(NSData *)receivedMessageData {
-    RBKSTOMPMessage *receivedMessage = [RBKSTOMPMessage responseMessageFromData:receivedMessageData];
+- (RBKStompFrame *)connectedMessageForConnectMessageData:(NSData *)receivedMessageData {
+    RBKStompFrame *receivedMessage = [RBKStompFrame responseFrameFromData:receivedMessageData];
 
     NSString *acceptedVersion = [receivedMessage headerValueForKey:RBKStompHeaderAcceptVersion];
     
-    RBKSTOMPMessage *connectedMessage = [RBKSTOMPMessage connectedMessageWithVersion:acceptedVersion];
+    RBKStompFrame *connectedMessage = [RBKStompFrame connectedFrameWithVersion:acceptedVersion];
     return connectedMessage;
 }
 
-- (RBKSTOMPMessage *)messageMessage:(NSString *)messageBody forSubscribeMessageData:(NSData *)receivedMessageData { // change our internal "message" to "frame"
-    RBKSTOMPMessage *receivedMessage = [RBKSTOMPMessage responseMessageFromData:receivedMessageData];
+- (RBKStompFrame *)messageMessage:(NSString *)messageBody forSubscribeMessageData:(NSData *)receivedMessageData { // change our internal "message" to "frame"
+    RBKStompFrame *receivedMessage = [RBKStompFrame responseFrameFromData:receivedMessageData];
     
     NSString *destination = [receivedMessage headerValueForKey:RBKStompHeaderDestination];
     NSString *subscriptionID = [receivedMessage headerValueForKey:RBKStompHeaderID];
     
-    RBKSTOMPMessage *messageMessage = [RBKSTOMPMessage messageMessageWithDestination:destination headers:nil body:messageBody subscription:subscriptionID];
+    RBKStompFrame *messageMessage = [RBKStompFrame messageFrameWithDestination:destination headers:nil body:messageBody subscription:subscriptionID];
     return messageMessage;
 }
 
