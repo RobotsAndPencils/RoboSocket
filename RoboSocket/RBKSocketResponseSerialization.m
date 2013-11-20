@@ -591,7 +591,6 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
     if ([stompFrame.command isEqualToString:RBKStompCommandMessage]) {
         
         NSString *destination = [stompFrame headerValueForKey:RBKStompHeaderDestination];
-        
         [self.delegate messageForDestination:destination  responseFrame:stompFrame];
     }
     

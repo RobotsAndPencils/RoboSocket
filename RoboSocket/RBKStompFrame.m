@@ -255,12 +255,35 @@ static NSUInteger messageIdentifier;
     if (self) {
         _destination = destination; // might not need to store this, its in the header
         _responseFrameHandler = messageHandler;
-        // self.subscriptions[identifier] = handler; // what does the scope of this handler need to be?
         _subscription = [RBKStompSubscription subscriptionWithIdentifier:identifier];
     }
     
     return self;
 }
+
+#pragma mark - Subscription
+
++ (instancetype)unsubscribeFrameWithDestination:(NSString *)destination subscriptionID:(NSString *)subscriptionID headers:(NSDictionary *)headers {
+    return [[RBKStompFrame alloc] initUnsubscribeMessageWithDestination:destination subscriptionID:subscriptionID headers:headers];
+}
+
+- (instancetype)initUnsubscribeMessageWithDestination:(NSString *)destination subscriptionID:(NSString *)subscriptionID headers:(NSDictionary *)headers  {
+    
+    NSMutableDictionary *mutableHeaders = [[NSMutableDictionary alloc] initWithDictionary:headers];
+    mutableHeaders[RBKStompHeaderDestination] = destination;
+    NSString *identifier = mutableHeaders[RBKStompHeaderID];
+    if (!identifier) {
+        mutableHeaders[RBKStompHeaderID] = subscriptionID;
+    }
+    
+    self = [self initFrameWithCommand:RBKStompCommandUnsubscribe headers:mutableHeaders body:nil];
+    if (self) {
+        _destination = destination; // might not need to store this, its in the header
+    }
+    
+    return self;
+}
+
 
 #pragma mark - Message
 
@@ -301,11 +324,6 @@ static NSUInteger messageIdentifier;
     
     NSMutableDictionary *mutableHeaders = [[NSMutableDictionary alloc] initWithDictionary:headers];
     mutableHeaders[RBKStompHeaderDestination] = destination;
-    NSString *identifier = mutableHeaders[RBKStompHeaderMessageID];
-    if (!identifier) {
-        identifier = [NSString stringWithFormat:@"msg-%d", messageIdentifier++];
-        mutableHeaders[RBKStompHeaderMessageID] = identifier;
-    }
     
     self = [self initFrameWithCommand:RBKStompCommandSend headers:mutableHeaders body:body];
     

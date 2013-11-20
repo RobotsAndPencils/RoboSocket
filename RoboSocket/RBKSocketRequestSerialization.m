@@ -1232,6 +1232,13 @@ typedef enum {
         NSString *subscriptionID = [stompFrame headerValueForKey:RBKStompHeaderID];
         [self.delegate subscribedToDestination:destination subscriptionID:subscriptionID messageHandler:frameHandler];
     }
+    // if this is an UNSUBSCRIBE frame then we need to tell our delegate so it can remove our response frame handler
+    else if ([stompFrame.command isEqualToString:RBKStompCommandUnsubscribe]) {
+        
+        NSString *destination = [stompFrame headerValueForKey:RBKStompHeaderDestination];
+        NSString *subscriptionID = [stompFrame headerValueForKey:RBKStompHeaderID];
+        [self.delegate unsubscribedFromDestination:destination subscriptionID:subscriptionID];
+    }
     
     NSData *frameAsData = [stompFrame frameData];
     return [[RBKSocketOperation alloc] initWithRequestFrame:frameAsData];    

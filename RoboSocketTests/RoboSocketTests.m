@@ -24,6 +24,7 @@ typedef NS_ENUM(NSUInteger, RBKTestScenario) {
     RBKTestScenarioStompConnect,
     RBKTestScenarioStompSubscribe,
     RBKTestScenarioStompSend,
+    RBKTestScenarioStompUnsubscribe,
 };
 
 
@@ -55,7 +56,7 @@ NSString * const hostURL = @"ws://localhost";
     NSUInteger port = [self.stubSocket serverSocketPort];
     // get the port that we're listening on and provide it to the client socket
     NSString *hostWithPort = [NSString stringWithFormat:@"%@:%d", hostURL, port];
-    NSLog(@"Server-style websocket listing on port %@", hostWithPort);
+    // NSLog(@"Server-style websocket listing on port %@", hostWithPort);
     
     self.socketManager = [[RBKSocketManager alloc] initWithSocketURL:[NSURL URLWithString:hostWithPort]];
 }
@@ -211,6 +212,7 @@ NSString * const hostURL = @"ws://localhost";
     RBKStompFrame *subscriptionFrame = [RBKStompFrame subscribeFrameWithDestination:@"/foo/bar" headers:@{@"x-test": @"12345"} messageHandler:^(RBKStompFrame *responseFrame) {
         subscriptionHandlerCalled = YES;
         subscriptionResponseFrame = responseFrame; // probably isn't echo'd per the standard, but this at least validates the conversion to/from RBKStompMessage
+        NSLog(@"--- %@", [responseFrame frameString]);
     }];
     
     __block BOOL success = NO;
@@ -261,13 +263,60 @@ NSString * const hostURL = @"ws://localhost";
     expect([responseFrame frameData]).willNot.equal([sendFrame frameData]); // subscribe message should get no immediate response, but for now give it a message response
 }
 
+- (void)testSocketSTOMPUnsubscribe {
+    
+    self.currentScenario = RBKTestScenarioStompSubscribe;
+    
+    self.socketManager.requestSerializer = [RBKSocketStompRequestSerializer serializer];
+    RBKSocketStompRequestSerializer *requestSerializer = (id)self.socketManager.requestSerializer;
+    requestSerializer.delegate = self.socketManager;
+    self.socketManager.responseSerializer = [RBKSocketStompResponseSerializer serializer];
+    RBKSocketStompResponseSerializer *responseSerializer = (id)self.socketManager.responseSerializer;
+    responseSerializer.delegate = self.socketManager;
+    
+    __block NSUInteger subscriptionHandlerCalledCounter = 0;
+    __block RBKStompFrame *subscriptionResponseFrame = nil;
+    
+    RBKStompFrame *subscriptionFrame = [RBKStompFrame subscribeFrameWithDestination:@"/foo/bar" headers:@{@"x-test": @"12345"} messageHandler:^(RBKStompFrame *responseFrame) {
+        subscriptionHandlerCalledCounter += 1;
+        subscriptionResponseFrame = responseFrame; // probably isn't echo'd per the standard, but this at least validates the conversion to/from RBKStompMessage
+        // NSLog(@"--- %@", [responseFrame frameString]);
+    }];
+    
+    RBKStompFrame *unsubscribeFrame = [RBKStompFrame unsubscribeFrameWithDestination:@"/foo/bar" subscriptionID:subscriptionFrame.subscription.identifier headers:nil];
+    
+    __block BOOL success = NO;
+    __weak typeof(self)weakSelf = self;
+    [self.socketManager sendSocketOperationWithFrame:subscriptionFrame success:^(RBKSocketOperation *operation, id responseObject) {
+        
+        // now that we've subscribed, unsubscribe
+        weakSelf.currentScenario = RBKTestScenarioStompUnsubscribe;
+        
+        [weakSelf.socketManager sendSocketOperationWithFrame:unsubscribeFrame success:^(RBKSocketOperation *operation, id responseObject) {
+            success = YES;
+        } failure:^(RBKSocketOperation *operation, NSError *error) {
+            success = NO;
+        }];
+
+        
+    } failure:^(RBKSocketOperation *operation, NSError *error) {
+        success = NO;
+    }];
+    
+    expect(success).will.beTruthy();
+    expect(subscriptionHandlerCalledCounter).will.beLessThanOrEqualTo(1); // the subscription message handler should only get called once
+    expect([subscriptionResponseFrame headerValueForKey:RBKStompHeaderDestination]).will.equal([subscriptionFrame headerValueForKey:RBKStompHeaderDestination]);
+    expect([subscriptionResponseFrame headerValueForKey:RBKStompHeaderSubscription]).will.equal([subscriptionFrame headerValueForKey:RBKStompHeaderID]);
+    expect([subscriptionResponseFrame bodyValue]).will.equal(@"Message for you sir");
+    expect([subscriptionResponseFrame frameData]).willNot.equal([subscriptionFrame frameData]); // subscribe message should get no immediate response, but for now give it a message response
+}
+
 
 #pragma mark - Private
 
 #pragma mark - SRWebSocketDelegate
 
 - (void)webSocket:(SRWebSocket *)webSocket didReceiveMessage:(id)message; {
-    NSLog(@"Received frame %@", message);
     // specific responses
     switch (self.currentScenario) {
         case RBKTestScenarioStompConnect:
@@ -279,9 +328,12 @@ NSString * const hostURL = @"ws://localhost";
             return;
             
         case RBKTestScenarioStompSend:
-            [webSocket send:[[self messageFrame:@"Message for you sir" forSendFrameData:message] frameData]]; // should this be an ack?
+            [webSocket send:[[self messageFrame:@"Message for you sir" forSendFrameData:message] frameData]];
             return;
-
+            
+        case RBKTestScenarioStompUnsubscribe:
+            [webSocket send:[[self messageFrame:@"Message for you sir" forSendFrameData:message] frameData]];
+            return;
 
         default:
             break;
@@ -291,22 +343,16 @@ NSString * const hostURL = @"ws://localhost";
 }
 
 - (void)webSocketDidOpen:(SRWebSocket *)webSocket; {
-    NSLog(@"Opened stub socket");
     self.socketOpen = YES;
 }
 
 
 - (void)webSocket:(SRWebSocket *)webSocket didFailWithError:(NSError *)error {
-    NSLog(@"failed");
-    
     self.socketOpen = NO;
 }
 
 - (void)webSocket:(SRWebSocket *)webSocket didCloseWithCode:(NSInteger)code reason:(NSString *)reason wasClean:(BOOL)wasClean {
-    NSLog(@"closed");
-
     self.socketOpen = NO;
-
 }
 
 #pragma mark - STOMP Response Messages

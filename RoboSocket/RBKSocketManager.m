@@ -140,6 +140,12 @@
     }
 }
 
+- (void)unsubscribedFromDestination:(NSString *)destination subscriptionID:(NSString *)subscriptionID {
+    if (self.subscriptions[destination][subscriptionID]) {
+        [self.subscriptions[destination] removeObjectForKey:subscriptionID];
+    }
+}
+
 #pragma mark - RBKSocketStompResponseSerializerDelegate
 
 - (void)messageForDestination:(NSString *)destination responseFrame:(RBKStompFrame *)responseFrame {

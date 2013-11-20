@@ -67,6 +67,8 @@ typedef void (^RBKStompFrameHandler)(RBKStompFrame *responseFrame);
 
 @interface RBKStompSubscription : NSObject
 
+@property (strong, nonatomic, readonly) NSString *identifier;
+
 @end
 
 @interface RBKStompFrame : NSObject
@@ -88,6 +90,10 @@ typedef void (^RBKStompFrameHandler)(RBKStompFrame *responseFrame);
 #pragma mark - Subscription
 
 + (instancetype)subscribeFrameWithDestination:(NSString *)destination headers:(NSDictionary *)headers messageHandler:(RBKStompFrameHandler)messageHandler;
+
+#pragma mark - Subscription
+
++ (instancetype)unsubscribeFrameWithDestination:(NSString *)destination subscriptionID:(NSString *)subscriptionID headers:(NSDictionary *)headers;
 
 #pragma mark - Message
 
