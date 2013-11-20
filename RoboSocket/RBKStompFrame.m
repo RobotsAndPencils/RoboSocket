@@ -107,12 +107,13 @@ RBKStompHeartbeat RBKStompHeartbeatFromString(NSString *heartbeatString) {
 
 @interface RBKStompFrame ()
 
-@property (nonatomic, strong) NSString *destination;
-@property (nonatomic, strong) NSDictionary *headers;
-@property (nonatomic, strong) NSString *command;
-@property (nonatomic, strong) NSString *body;
+@property (strong, nonatomic) NSString *destination;
+@property (strong, nonatomic) NSDictionary *headers;
+@property (strong, nonatomic) NSString *command;
+@property (strong, nonatomic) NSString *body;
 
-@property (nonatomic, strong, readwrite) RBKStompSubscription *subscription;
+@property (strong, nonatomic, readwrite) RBKStompSubscription *subscription;
+@property (strong, nonatomic) RBKStompFrameHandler responseFrameHandler;
 
 @end
 
@@ -124,7 +125,7 @@ static NSUInteger messageIdentifier;
 + (instancetype)responseFrameFromData:(NSData *)data {
 
     NSString *frameAsString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-    NSLog(@"<<<\n%@", frameAsString);
+    // NSLog(@"<<<\n%@", frameAsString);
     
     NSMutableArray *contents = [[frameAsString componentsSeparatedByString:RBKStompLineFeed] mutableCopy];
     // skip initial if its an empty string
@@ -231,11 +232,11 @@ static NSUInteger messageIdentifier;
 
 #pragma mark - Subscription
 
-+ (instancetype)subscribeFrameWithDestination:(NSString *)destination headers:(NSDictionary *)headers { // messageHandler
-    return [[RBKStompFrame alloc] initSubscribeMessageWithDestination:destination headers:headers];
++ (instancetype)subscribeFrameWithDestination:(NSString *)destination headers:(NSDictionary *)headers messageHandler:(RBKStompFrameHandler)messageHandler {
+    return [[RBKStompFrame alloc] initSubscribeMessageWithDestination:destination headers:headers messageHandler:messageHandler];
 }
 
-- (instancetype)initSubscribeMessageWithDestination:(NSString *)destination headers:(NSDictionary *)headers {
+- (instancetype)initSubscribeMessageWithDestination:(NSString *)destination headers:(NSDictionary *)headers messageHandler:(RBKStompFrameHandler)messageHandler {
 
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
@@ -253,7 +254,7 @@ static NSUInteger messageIdentifier;
     self = [self initFrameWithCommand:RBKStompCommandSubscribe headers:mutableHeaders body:nil];
     if (self) {
         _destination = destination; // might not need to store this, its in the header
-        
+        _responseFrameHandler = messageHandler;
         // self.subscriptions[identifier] = handler; // what does the scope of this handler need to be?
         _subscription = [RBKStompSubscription subscriptionWithIdentifier:identifier];
     }
@@ -290,9 +291,31 @@ static NSUInteger messageIdentifier;
 }
 
 
+#pragma mark - Send
+
++ (instancetype)sendFrameWithDestination:(NSString *)destination headers:(NSDictionary *)headers body:(NSString *)body { // messageHandler
+    return [[RBKStompFrame alloc] initSendFrameWithDestination:destination headers:headers body:body];
+}
+
+- (instancetype)initSendFrameWithDestination:(NSString *)destination headers:(NSDictionary *)headers body:(NSString *)body {
+    
+    NSMutableDictionary *mutableHeaders = [[NSMutableDictionary alloc] initWithDictionary:headers];
+    mutableHeaders[RBKStompHeaderDestination] = destination;
+    NSString *identifier = mutableHeaders[RBKStompHeaderMessageID];
+    if (!identifier) {
+        identifier = [NSString stringWithFormat:@"msg-%d", messageIdentifier++];
+        mutableHeaders[RBKStompHeaderMessageID] = identifier;
+    }
+    
+    self = [self initFrameWithCommand:RBKStompCommandSend headers:mutableHeaders body:body];
+    
+    return self;
+}
+
+
 #pragma mark - Public
 
-- (NSData *)frameData {
+- (NSString *)frameString {
     NSMutableString *frameString = [NSMutableString stringWithString:[self.command stringByAppendingString:RBKStompLineFeed]];
     NSMutableDictionary *mutableHeaders = [self.headers mutableCopy];
     // include content-type and content-length if we have a body
@@ -319,9 +342,13 @@ static NSUInteger messageIdentifier;
 	}
     [frameString appendString:RBKStompNullCharString];
     
-    NSLog(@">>>\n%@", frameString);
+    // NSLog(@">>>\n%@", frameString);
+    return frameString;
+}
+
+- (NSData *)frameData {
     
-    return [frameString dataUsingEncoding:NSUTF8StringEncoding];
+    return [[self frameString] dataUsingEncoding:NSUTF8StringEncoding];
 }
 
 - (NSString *)headerValueForKey:(NSString *)key {

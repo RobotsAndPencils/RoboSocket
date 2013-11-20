@@ -586,7 +586,16 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
         return nil;
     }
     
-    return [RBKStompFrame responseFrameFromData:responseFrame];
+    RBKStompFrame *stompFrame = [RBKStompFrame responseFrameFromData:responseFrame];
+    // if this is a MESSAGE frame then we need to tell our delegate so the response frame handler can be called
+    if ([stompFrame.command isEqualToString:RBKStompCommandMessage]) {
+        
+        NSString *destination = [stompFrame headerValueForKey:RBKStompHeaderDestination];
+        
+        [self.delegate messageForDestination:destination  responseFrame:stompFrame];
+    }
+    
+    return stompFrame;
 }
 
 #pragma mark - NSCoding

@@ -13,7 +13,7 @@
 #import "RBKSocketRequestSerialization.h"
 #import "RBKSocketResponseSerialization.h"
 
-@interface RBKSocketManager : NSObject
+@interface RBKSocketManager : NSObject <RBKSocketStompRequestSerializerDelegate, RBKSocketStompResponseSerializerDelegate>
 
 
 /**

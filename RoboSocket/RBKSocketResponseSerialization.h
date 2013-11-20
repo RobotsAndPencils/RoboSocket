@@ -23,6 +23,8 @@
 #import <Foundation/Foundation.h>
 #import <CoreGraphics/CoreGraphics.h>
 
+#import "RBKStompFrame.h"
+
 /**
  The `AFURLResponseSerialization` protocol is adopted by an object that decodes data into a more useful object representation, according to details in the server response. Response serializers may additionally perform validation on the incoming response and data.
 
@@ -203,11 +205,22 @@
 
 #pragma mark -
 
+@protocol RBKSocketStompResponseSerializerDelegate <NSObject>
+
+- (void)messageForDestination:(NSString *)destination responseFrame:(RBKStompFrame *)responseFrame;
+
+@end
+
 /**
  `RBKSocketStompResponseSerializer` is a subclass of `RBKSocketResponseSerializer` that validates and decodes STOMP responses.
  
  */
 @interface RBKSocketStompResponseSerializer : RBKSocketResponseSerializer
+
+/**
+ The delegate used to call subscription handlers
+ */
+@property (weak, nonatomic) id<RBKSocketStompResponseSerializerDelegate> delegate;
 
 /**
  The property list format. Possible values are described in "NSPropertyListFormat".

@@ -12,10 +12,12 @@
 
 @interface RBKSocketManager () <RBKSocketControlDelegate>
 
-@property (nonatomic, strong) NSOperationQueue *operationQueue;
+@property (strong, nonatomic) NSOperationQueue *operationQueue;
 @property (strong, nonatomic) RoboSocket *socket;
 @property (strong, nonatomic) NSMutableArray *pendingOperations;
 @property (assign, nonatomic, getter = socketIsOpen) BOOL socketOpen;
+
+@property (strong, nonatomic) NSMutableDictionary *subscriptions;
 
 @end
 
@@ -32,6 +34,7 @@
         _socketOpen = NO;
         _requestSerializer = [RBKSocketStringRequestSerializer serializer];
         _responseSerializer = [RBKSocketStringResponseSerializer serializer];
+        _subscriptions = [NSMutableDictionary dictionary];
         [self openSocket];
     }
     return self;
@@ -122,6 +125,33 @@
 - (void)webSocket:(RoboSocket *)webSocket didCloseWithCode:(NSInteger)code reason:(NSString *)reason wasClean:(BOOL)wasClean {
     
     self.socketOpen = NO; // operations should now be stored
+}
+
+#pragma mark - RBKSocketStompRequestSerializerDelegate
+
+- (void)subscribedToDestination:(NSString *)destination subscriptionID:(NSString *)subscriptionID messageHandler:(RBKStompFrameHandler)messageHandler {
+    // remember either the subscription ID and the destination as well as the handler
+    
+    if (messageHandler) {
+        if (!self.subscriptions[destination]) {
+            self.subscriptions[destination] = [NSMutableDictionary dictionary];
+        }
+        self.subscriptions[destination][subscriptionID] = messageHandler;
+    }
+}
+
+#pragma mark - RBKSocketStompResponseSerializerDelegate
+
+- (void)messageForDestination:(NSString *)destination responseFrame:(RBKStompFrame *)responseFrame {
+    // use the stored destination, subscriptionID and handler
+    // for each subscription, call its frameHandler
+    NSDictionary *subscriptions = self.subscriptions[destination];
+    [subscriptions enumerateKeysAndObjectsUsingBlock:^(NSString *subscriptionID, RBKStompFrameHandler frameHandler, BOOL *stop) {
+        
+        if (frameHandler) {
+            frameHandler(responseFrame);
+        }
+    }];
 }
 
 

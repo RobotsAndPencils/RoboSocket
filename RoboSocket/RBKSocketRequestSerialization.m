@@ -1223,6 +1223,16 @@ typedef enum {
     
     RBKStompFrame *stompFrame = (RBKStompFrame *)frame;
     
+    // if this is a SUBSCRIBE frame then we need to tell our delegate of our response frame handler so it can get called when we get Messages
+    
+    if ([stompFrame.command isEqualToString:RBKStompCommandSubscribe]) {
+        RBKStompFrameHandler frameHandler = stompFrame.responseFrameHandler;
+        
+        NSString *destination = [stompFrame headerValueForKey:RBKStompHeaderDestination];
+        NSString *subscriptionID = [stompFrame headerValueForKey:RBKStompHeaderID];
+        [self.delegate subscribedToDestination:destination subscriptionID:subscriptionID messageHandler:frameHandler];
+    }
+    
     NSData *frameAsData = [stompFrame frameData];
     return [[RBKSocketOperation alloc] initWithRequestFrame:frameAsData];    
 }

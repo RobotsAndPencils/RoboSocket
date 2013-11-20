@@ -60,15 +60,20 @@ struct RBKStompHeartbeat {
 };
 typedef struct RBKStompHeartbeat RBKStompHeartbeat;
 
+@class RBKStompFrame;
+
+typedef void (^RBKStompFrameHandler)(RBKStompFrame *responseFrame);
+
+
 @interface RBKStompSubscription : NSObject
 
 @end
 
 @interface RBKStompFrame : NSObject
 
-@property (nonatomic, strong, readonly) RBKStompSubscription *subscription;
-@property (nonatomic, strong, readonly) NSString *command;
-
+@property (strong, nonatomic, readonly) RBKStompSubscription *subscription;
+@property (strong, nonatomic, readonly) NSString *command;
+@property (strong, nonatomic, readonly) RBKStompFrameHandler responseFrameHandler;
 
 + (instancetype)responseFrameFromData:(NSData *)data;
 
@@ -82,14 +87,19 @@ typedef struct RBKStompHeartbeat RBKStompHeartbeat;
 
 #pragma mark - Subscription
 
-+ (instancetype)subscribeFrameWithDestination:(NSString *)destination headers:(NSDictionary *)headers;
++ (instancetype)subscribeFrameWithDestination:(NSString *)destination headers:(NSDictionary *)headers messageHandler:(RBKStompFrameHandler)messageHandler;
 
 #pragma mark - Message
 
 + (instancetype)messageFrameWithDestination:(NSString *)destination headers:(NSDictionary *)headers body:(NSString *)body subscription:(NSString *)subscription;
 
+#pragma mark - Send
+
++ (instancetype)sendFrameWithDestination:(NSString *)destination headers:(NSDictionary *)headers body:(NSString *)body;
+
 #pragma mark - Public
 
+- (NSString *)frameString;
 - (NSData *)frameData;
 - (NSString *)headerValueForKey:(NSString *)key;
 - (NSString *)bodyValue;

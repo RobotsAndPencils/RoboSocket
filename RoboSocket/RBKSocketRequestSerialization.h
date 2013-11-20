@@ -25,6 +25,8 @@
 #import <UIKit/UIKit.h>
 #endif
 
+#import "RBKStompFrame.h"
+
 @class RBKSocketOperation;
 
 /**
@@ -365,7 +367,16 @@ extern NSTimeInterval const kAFUploadStream3GSuggestedDelay;
 
 @end
 
+
+@protocol RBKSocketStompRequestSerializerDelegate <NSObject>
+
+- (void)subscribedToDestination:(NSString *)destination subscriptionID:(NSString *)subscriptionID messageHandler:(RBKStompFrameHandler)messageHandler;
+
+@end
+
 @interface RBKSocketStompRequestSerializer : RBKSocketRequestSerializer
+
+@property (weak, nonatomic) id<RBKSocketStompRequestSerializerDelegate> delegate;
 
 /**
  The property list format. Possible values are described in "NSPropertyListFormat".

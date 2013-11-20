@@ -23,6 +23,7 @@ typedef NS_ENUM(NSUInteger, RBKTestScenario) {
     RBKTestScenarioNone = 0,
     RBKTestScenarioStompConnect,
     RBKTestScenarioStompSubscribe,
+    RBKTestScenarioStompSend,
 };
 
 
@@ -193,35 +194,72 @@ NSString * const hostURL = @"ws://localhost";
 // heart beat is not tested
 // negotiation error is not tested
 
-- (void)testSocketEchoSTOMPSubscribe {
+- (void)testSocketSTOMPSubscribe {
     
     self.currentScenario = RBKTestScenarioStompSubscribe;
 
     self.socketManager.requestSerializer = [RBKSocketStompRequestSerializer serializer];
+    RBKSocketStompRequestSerializer *requestSerializer = (id)self.socketManager.requestSerializer;
+    requestSerializer.delegate = self.socketManager;
     self.socketManager.responseSerializer = [RBKSocketStompResponseSerializer serializer];
+    RBKSocketStompResponseSerializer *responseSerializer = (id)self.socketManager.responseSerializer;
+    responseSerializer.delegate = self.socketManager;
     
-    RBKStompFrame *subscriptionMessage = [RBKStompFrame subscribeFrameWithDestination:@"/foo/bar" headers:@{@"x-test": @"12345"}];
+    __block BOOL subscriptionHandlerCalled = NO;
+    __block RBKStompFrame *subscriptionResponseFrame = nil;
+
+    RBKStompFrame *subscriptionFrame = [RBKStompFrame subscribeFrameWithDestination:@"/foo/bar" headers:@{@"x-test": @"12345"} messageHandler:^(RBKStompFrame *responseFrame) {
+        subscriptionHandlerCalled = YES;
+        subscriptionResponseFrame = responseFrame; // probably isn't echo'd per the standard, but this at least validates the conversion to/from RBKStompMessage
+    }];
     
     __block BOOL success = NO;
-    __block RBKStompFrame *responseMessage = nil;
-    [self.socketManager sendSocketOperationWithFrame:subscriptionMessage success:^(RBKSocketOperation *operation, id responseObject) {
+    [self.socketManager sendSocketOperationWithFrame:subscriptionFrame success:^(RBKSocketOperation *operation, id responseObject) {
         success = YES;
         
-        // subscriptions arent' echoed per the standard. Send a message that matches the subscription
-        
-        responseMessage = responseObject; // probably isn't echo'd per the standard, but this at least validates the conversion to/from RBKStompMessage
     } failure:^(RBKSocketOperation *operation, NSError *error) {
         success = NO;
     }];
     expect(success).will.beTruthy();
-    expect([responseMessage headerValueForKey:RBKStompHeaderDestination]).will.equal([subscriptionMessage headerValueForKey:RBKStompHeaderDestination]);
-    expect([responseMessage headerValueForKey:RBKStompHeaderSubscription]).will.equal([subscriptionMessage headerValueForKey:RBKStompHeaderID]);
-    expect([responseMessage bodyValue]).will.equal(@"Message for you sir");
-    expect([responseMessage frameData]).willNot.equal([subscriptionMessage frameData]); // subscribe message should get no immediate response, but for now give it a message response
+    expect(subscriptionHandlerCalled).will.beTruthy();
+    expect([subscriptionResponseFrame headerValueForKey:RBKStompHeaderDestination]).will.equal([subscriptionFrame headerValueForKey:RBKStompHeaderDestination]);
+    expect([subscriptionResponseFrame headerValueForKey:RBKStompHeaderSubscription]).will.equal([subscriptionFrame headerValueForKey:RBKStompHeaderID]);
+    expect([subscriptionResponseFrame bodyValue]).will.equal(@"Message for you sir");
+    expect([subscriptionResponseFrame frameData]).willNot.equal([subscriptionFrame frameData]); // subscribe message should get no immediate response, but for now give it a message response
 }
 
 // Subscription:
 // subscription error is not tested
+
+
+- (void)testSocketSTOMPSend {
+    
+    self.currentScenario = RBKTestScenarioStompSend;
+    
+    self.socketManager.requestSerializer = [RBKSocketStompRequestSerializer serializer];
+    RBKSocketStompRequestSerializer *requestSerializer = (id)self.socketManager.requestSerializer;
+    requestSerializer.delegate = self.socketManager;
+    self.socketManager.responseSerializer = [RBKSocketStompResponseSerializer serializer];
+    RBKSocketStompResponseSerializer *responseSerializer = (id)self.socketManager.responseSerializer;
+    responseSerializer.delegate = self.socketManager;
+    
+    NSString *sendBody = @"Message for you sir";
+    
+    RBKStompFrame *sendFrame = [RBKStompFrame sendFrameWithDestination:@"/foo/bar" headers:@{@"x-test": @"12345"} body:sendBody];
+    __block BOOL success = NO;
+    __block RBKStompFrame *responseFrame = nil;
+    [self.socketManager sendSocketOperationWithFrame:sendFrame success:^(RBKSocketOperation *operation, id responseObject) {
+        success = YES;
+        responseFrame = responseObject; // probably isn't echo'd per the standard, but this at least validates that send messages are being sent
+    } failure:^(RBKSocketOperation *operation, NSError *error) {
+        success = NO;
+    }];
+    expect(success).will.beTruthy();
+    expect([responseFrame headerValueForKey:RBKStompHeaderDestination]).will.equal([sendFrame headerValueForKey:RBKStompHeaderDestination]);
+    expect([responseFrame headerValueForKey:RBKStompHeaderSubscription]).will.equal(@"sub-0");
+    expect([responseFrame bodyValue]).will.equal(sendBody);
+    expect([responseFrame frameData]).willNot.equal([sendFrame frameData]); // subscribe message should get no immediate response, but for now give it a message response
+}
 
 
 #pragma mark - Private
@@ -239,6 +277,11 @@ NSString * const hostURL = @"ws://localhost";
         case RBKTestScenarioStompSubscribe:
             [webSocket send:[[self messageFrame:@"Message for you sir" forSubscribeFrameData:message] frameData]];
             return;
+            
+        case RBKTestScenarioStompSend:
+            [webSocket send:[[self messageFrame:@"Message for you sir" forSendFrameData:message] frameData]]; // should this be an ack?
+            return;
+
 
         default:
             break;
@@ -277,7 +320,7 @@ NSString * const hostURL = @"ws://localhost";
     return connectedFrame;
 }
 
-- (RBKStompFrame *)messageFrame:(NSString *)messageBody forSubscribeFrameData:(NSData *)receivedMessageData { // change our internal "message" to "frame"
+- (RBKStompFrame *)messageFrame:(NSString *)messageBody forSubscribeFrameData:(NSData *)receivedMessageData {
     RBKStompFrame *receivedFrame = [RBKStompFrame responseFrameFromData:receivedMessageData];
     
     NSString *destination = [receivedFrame headerValueForKey:RBKStompHeaderDestination];
@@ -286,6 +329,19 @@ NSString * const hostURL = @"ws://localhost";
     RBKStompFrame *messageFrame = [RBKStompFrame messageFrameWithDestination:destination headers:nil body:messageBody subscription:subscriptionID];
     return messageFrame;
 }
+
+- (RBKStompFrame *)messageFrame:(NSString *)messageBody forSendFrameData:(NSData *)receivedMessageData {
+    RBKStompFrame *receivedFrame = [RBKStompFrame responseFrameFromData:receivedMessageData];
+    
+    NSString *destination = [receivedFrame headerValueForKey:RBKStompHeaderDestination];
+    NSString *subscriptionID = @"sub-0"; // because we're just testing receiving a SEND frame and returning a MESSAGE frame (without actually subscribing, use a fake subscription
+    
+    // should this message have some of the same custom headers?
+    
+    RBKStompFrame *messageFrame = [RBKStompFrame messageFrameWithDestination:destination headers:nil body:messageBody subscription:subscriptionID];
+    return messageFrame;
+}
+
 
 
 @end
