@@ -370,7 +370,7 @@ extern NSTimeInterval const kAFUploadStream3GSuggestedDelay;
 
 @protocol RBKSocketStompRequestSerializerDelegate <NSObject>
 
-- (void)subscribedToDestination:(NSString *)destination subscriptionID:(NSString *)subscriptionID messageHandler:(RBKStompFrameHandler)messageHandler;
+- (void)subscribedToDestination:(NSString *)destination subscriptionID:(NSString *)subscriptionID acknowledgeMode:(NSString *)acknowledgeMode messageHandler:(RBKStompFrameHandler)messageHandler;
 - (void)unsubscribedFromDestination:(NSString *)destination subscriptionID:(NSString *)subscriptionID;
 
 @end

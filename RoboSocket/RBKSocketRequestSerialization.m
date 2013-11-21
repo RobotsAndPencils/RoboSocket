@@ -1230,7 +1230,14 @@ typedef enum {
         
         NSString *destination = [stompFrame headerValueForKey:RBKStompHeaderDestination];
         NSString *subscriptionID = [stompFrame headerValueForKey:RBKStompHeaderID];
-        [self.delegate subscribedToDestination:destination subscriptionID:subscriptionID messageHandler:frameHandler];
+        
+        // if the client is subscribing and the ack mode is client or client-individual, we need to track this so we can ack appropriately
+        NSString *acknowledgeMode = [stompFrame headerValueForKey:RBKStompHeaderAck];
+        if ([acknowledgeMode isEqualToString:RBKStompAckAuto]) {
+            acknowledgeMode = nil;
+        }// otherwise pass our acknowledgeMode on, where nil is the same as auto
+        
+        [self.delegate subscribedToDestination:destination subscriptionID:subscriptionID acknowledgeMode:acknowledgeMode messageHandler:frameHandler];
     }
     // if this is an UNSUBSCRIBE frame then we need to tell our delegate so it can remove our response frame handler
     else if ([stompFrame.command isEqualToString:RBKStompCommandUnsubscribe]) {

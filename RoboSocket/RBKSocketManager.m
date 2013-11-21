@@ -17,7 +17,8 @@
 @property (strong, nonatomic) NSMutableArray *pendingOperations;
 @property (assign, nonatomic, getter = socketIsOpen) BOOL socketOpen;
 
-@property (strong, nonatomic) NSMutableDictionary *subscriptions;
+@property (strong, nonatomic) NSMutableDictionary *subscriptionHandlers;
+@property (strong, nonatomic) NSMutableDictionary *subscriptionAcknowledgementModes;
 
 @end
 
@@ -34,7 +35,8 @@
         _socketOpen = NO;
         _requestSerializer = [RBKSocketStringRequestSerializer serializer];
         _responseSerializer = [RBKSocketStringResponseSerializer serializer];
-        _subscriptions = [NSMutableDictionary dictionary];
+        _subscriptionHandlers = [NSMutableDictionary dictionary];
+        _subscriptionAcknowledgementModes = [NSMutableDictionary dictionary];
         [self openSocket];
     }
     return self;
@@ -129,20 +131,30 @@
 
 #pragma mark - RBKSocketStompRequestSerializerDelegate
 
-- (void)subscribedToDestination:(NSString *)destination subscriptionID:(NSString *)subscriptionID messageHandler:(RBKStompFrameHandler)messageHandler {
+- (void)subscribedToDestination:(NSString *)destination subscriptionID:(NSString *)subscriptionID acknowledgeMode:(NSString *)acknowledgeMode messageHandler:(RBKStompFrameHandler)messageHandler {
     // remember either the subscription ID and the destination as well as the handler
     
     if (messageHandler) {
-        if (!self.subscriptions[destination]) {
-            self.subscriptions[destination] = [NSMutableDictionary dictionary];
+        if (!self.subscriptionHandlers[destination]) {
+            self.subscriptionHandlers[destination] = [NSMutableDictionary dictionary];
         }
-        self.subscriptions[destination][subscriptionID] = messageHandler;
+        self.subscriptionHandlers[destination][subscriptionID] = messageHandler;
+    }
+    
+    if ([acknowledgeMode isEqualToString:RBKStompAckClient] || [acknowledgeMode isEqualToString:RBKStompAckClientIndividual]) {
+        if (!self.subscriptionAcknowledgementModes[destination]) {
+            self.subscriptionAcknowledgementModes[destination] = [NSMutableDictionary dictionary];
+        }
+        self.subscriptionAcknowledgementModes[destination][subscriptionID] = acknowledgeMode;
     }
 }
 
 - (void)unsubscribedFromDestination:(NSString *)destination subscriptionID:(NSString *)subscriptionID {
-    if (self.subscriptions[destination][subscriptionID]) {
-        [self.subscriptions[destination] removeObjectForKey:subscriptionID];
+    if (self.subscriptionHandlers[destination][subscriptionID]) {
+        [self.subscriptionHandlers[destination] removeObjectForKey:subscriptionID];
+    }
+    if (self.subscriptionAcknowledgementModes[destination][subscriptionID]) {
+        [self.subscriptionAcknowledgementModes[destination] removeObjectForKey:subscriptionID];
     }
 }
 
@@ -151,7 +163,7 @@
 - (void)messageForDestination:(NSString *)destination responseFrame:(RBKStompFrame *)responseFrame {
     // use the stored destination, subscriptionID and handler
     // for each subscription, call its frameHandler
-    NSDictionary *subscriptions = self.subscriptions[destination];
+    NSDictionary *subscriptions = self.subscriptionHandlers[destination];
     [subscriptions enumerateKeysAndObjectsUsingBlock:^(NSString *subscriptionID, RBKStompFrameHandler frameHandler, BOOL *stop) {
         
         if (frameHandler) {
@@ -159,6 +171,49 @@
         }
     }];
 }
+
+- (BOOL)shouldAcknowledgeMessageForDestination:(NSString *)destination responseFrame:(RBKStompFrame *)responseFrame {
+    // check if we need to ack any of these messages
+    __block BOOL shouldAcknowldge = NO;
+    NSDictionary *subscriptionsToAcknowledge = self.subscriptionAcknowledgementModes[destination];
+    [subscriptionsToAcknowledge enumerateKeysAndObjectsUsingBlock:^(NSString *subscriptionID, NSString *acknowledgeMode, BOOL *stop) {
+        if ([subscriptionID isEqualToString:[responseFrame headerValueForKey:RBKStompHeaderSubscription]]) {
+            shouldAcknowldge = YES;
+            *stop = YES;
+        }
+    }];
+    return shouldAcknowldge;
+}
+
+- (BOOL)shouldNackMessageForDestination:(NSString *)destination responseFrame:(RBKStompFrame *)responseFrame {
+    // check if we need to ack any of these messages
+    __block BOOL shouldNack = YES; // guilty until proven innocent
+    
+    // see if this is any of our subscriptions, if it is, then don't NACK
+    NSDictionary *subscriptionsToAcknowledge = self.subscriptionAcknowledgementModes[destination];
+    if (!subscriptionsToAcknowledge) {
+        // either we're not subscribed or this is an ack mode of auto
+        shouldNack = NO;
+    }
+    [subscriptionsToAcknowledge enumerateKeysAndObjectsUsingBlock:^(NSString *subscriptionID, NSString *acknowledgeMode, BOOL *stop) {
+        if ([subscriptionID isEqualToString:[responseFrame headerValueForKey:RBKStompHeaderSubscription]]) {
+            shouldNack = NO; // this is a destination we've subscribed to but this message doesn't have our subscriptionID
+            *stop = YES;
+        }
+    }];
+    return shouldNack;
+}
+
+- (RBKSocketOperation *)sendSocketOperationWithFrame:(RBKStompFrame *)frame {
+    
+    RBKSocketOperation *operation = [self sendSocketOperationWithFrame:frame success:^(RBKSocketOperation *operation, id responseObject) {
+        NSLog(@"sent frame");
+    } failure:^(RBKSocketOperation *operation, NSError *error) {
+        NSLog(@"failed to send frame");
+    }];
+    return operation;
+}
+
 
 
 @end

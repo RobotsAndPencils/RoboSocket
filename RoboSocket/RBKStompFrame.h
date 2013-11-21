@@ -103,6 +103,14 @@ typedef void (^RBKStompFrameHandler)(RBKStompFrame *responseFrame);
 
 + (instancetype)sendFrameWithDestination:(NSString *)destination headers:(NSDictionary *)headers body:(NSString *)body;
 
+#pragma mark - Ack
+
++ (instancetype)ackFrameWithIdentifier:(NSString *)identifier;
+
+#pragma mark - Nack
+
++ (instancetype)nackFrameWithIdentifier:(NSString *)identifier;
+
 #pragma mark - Public
 
 - (NSString *)frameString;

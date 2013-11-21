@@ -23,6 +23,10 @@ typedef NS_ENUM(NSUInteger, RBKTestScenario) {
     RBKTestScenarioNone = 0,
     RBKTestScenarioStompConnect,
     RBKTestScenarioStompSubscribe,
+    RBKTestScenarioStompSubscribeClientAck,
+    RBKTestScenarioStompSubscribeClientNack,
+    RBKTestScenarioStompAck,
+    RBKTestScenarioStompNack,
     RBKTestScenarioStompSend,
     RBKTestScenarioStompUnsubscribe,
 };
@@ -38,6 +42,7 @@ NSString * const hostURL = @"ws://localhost";
 
 @property (assign, nonatomic, getter = isFinished) BOOL socketOpen;
 @property (assign, nonatomic) RBKTestScenario currentScenario;
+@property (assign, nonatomic, getter = isCurrentScenarioSuccessful) BOOL currentScenarioSuccessful;
 
 @end
 
@@ -46,9 +51,10 @@ NSString * const hostURL = @"ws://localhost";
 - (void)setUp {
     [super setUp];
     // Put setup code here. This method is called before the invocation of each test method in the class.
-    [Expecta setAsynchronousTestTimeout:5.0];
+    [Expecta setAsynchronousTestTimeout:500.0];
 
     self.currentScenario = RBKTestScenarioNone;
+    self.currentScenarioSuccessful = NO;
     self.socketOpen = NO;
     self.stubSocket = [[SRServerSocket alloc] initWithURL:[NSURL URLWithString:hostURL]];
     self.stubSocket.delegate = self;
@@ -212,7 +218,7 @@ NSString * const hostURL = @"ws://localhost";
     RBKStompFrame *subscriptionFrame = [RBKStompFrame subscribeFrameWithDestination:@"/foo/bar" headers:@{@"x-test": @"12345"} messageHandler:^(RBKStompFrame *responseFrame) {
         subscriptionHandlerCalled = YES;
         subscriptionResponseFrame = responseFrame; // probably isn't echo'd per the standard, but this at least validates the conversion to/from RBKStompMessage
-        NSLog(@"--- %@", [responseFrame frameString]);
+        // NSLog(@"--- %@", [responseFrame frameString]);
     }];
     
     __block BOOL success = NO;
@@ -229,6 +235,70 @@ NSString * const hostURL = @"ws://localhost";
     expect([subscriptionResponseFrame bodyValue]).will.equal(@"Message for you sir");
     expect([subscriptionResponseFrame frameData]).willNot.equal([subscriptionFrame frameData]); // subscribe message should get no immediate response, but for now give it a message response
 }
+
+- (void)testSocketSTOMPSubscribeClientAck {
+    
+    self.currentScenario = RBKTestScenarioStompSubscribeClientAck;
+    
+    self.socketManager.requestSerializer = [RBKSocketStompRequestSerializer serializer];
+    RBKSocketStompRequestSerializer *requestSerializer = (id)self.socketManager.requestSerializer;
+    requestSerializer.delegate = self.socketManager;
+    self.socketManager.responseSerializer = [RBKSocketStompResponseSerializer serializer];
+    RBKSocketStompResponseSerializer *responseSerializer = (id)self.socketManager.responseSerializer;
+    responseSerializer.delegate = self.socketManager;
+    
+    __block BOOL subscriptionHandlerCalled = NO;
+    __block RBKStompFrame *subscriptionResponseFrame = nil;
+    
+    RBKStompFrame *subscriptionFrame = [RBKStompFrame subscribeFrameWithDestination:@"/foo/bar" headers:@{@"x-test": @"12345", @"ack": @"client"} messageHandler:^(RBKStompFrame *responseFrame) {
+        subscriptionHandlerCalled = YES;
+        subscriptionResponseFrame = responseFrame; // probably isn't echo'd per the standard, but this at least validates the conversion to/from RBKStompMessage
+        // NSLog(@"--- %@", [responseFrame frameString]);
+    }];
+    
+    __block BOOL success = NO;
+    [self.socketManager sendSocketOperationWithFrame:subscriptionFrame success:^(RBKSocketOperation *operation, id responseObject) {
+        success = YES;
+        
+    } failure:^(RBKSocketOperation *operation, NSError *error) {
+        success = NO;
+    }];
+    expect(success).will.beTruthy();
+    expect(self.isCurrentScenarioSuccessful).will.beTruthy(); // indicates that the ack was successful
+}
+
+- (void)testSocketSTOMPSubscribeClientNack {
+    
+    self.currentScenario = RBKTestScenarioStompSubscribeClientNack;
+    
+    self.socketManager.requestSerializer = [RBKSocketStompRequestSerializer serializer];
+    RBKSocketStompRequestSerializer *requestSerializer = (id)self.socketManager.requestSerializer;
+    requestSerializer.delegate = self.socketManager;
+    self.socketManager.responseSerializer = [RBKSocketStompResponseSerializer serializer];
+    RBKSocketStompResponseSerializer *responseSerializer = (id)self.socketManager.responseSerializer;
+    responseSerializer.delegate = self.socketManager;
+    
+    __block BOOL subscriptionHandlerCalled = NO;
+    __block RBKStompFrame *subscriptionResponseFrame = nil;
+    
+    RBKStompFrame *subscriptionFrame = [RBKStompFrame subscribeFrameWithDestination:@"/foo/bar" headers:@{@"x-test": @"12345", @"ack": @"client"} messageHandler:^(RBKStompFrame *responseFrame) {
+        subscriptionHandlerCalled = YES;
+        subscriptionResponseFrame = responseFrame; // probably isn't echo'd per the standard, but this at least validates the conversion to/from RBKStompMessage
+        // NSLog(@"--- %@", [responseFrame frameString]);
+    }];
+    
+    __block BOOL success = NO;
+    [self.socketManager sendSocketOperationWithFrame:subscriptionFrame success:^(RBKSocketOperation *operation, id responseObject) {
+        success = YES;
+        
+    } failure:^(RBKSocketOperation *operation, NSError *error) {
+        success = NO;
+    }];
+    expect(success).will.beTruthy();
+    expect(self.isCurrentScenarioSuccessful).will.beTruthy(); // indicates that the ack was successful
+}
+
+
 
 // Subscription:
 // subscription error is not tested
@@ -280,7 +350,6 @@ NSString * const hostURL = @"ws://localhost";
     RBKStompFrame *subscriptionFrame = [RBKStompFrame subscribeFrameWithDestination:@"/foo/bar" headers:@{@"x-test": @"12345"} messageHandler:^(RBKStompFrame *responseFrame) {
         subscriptionHandlerCalledCounter += 1;
         subscriptionResponseFrame = responseFrame; // probably isn't echo'd per the standard, but this at least validates the conversion to/from RBKStompMessage
-        // NSLog(@"--- %@", [responseFrame frameString]);
     }];
     
     RBKStompFrame *unsubscribeFrame = [RBKStompFrame unsubscribeFrameWithDestination:@"/foo/bar" subscriptionID:subscriptionFrame.subscription.identifier headers:nil];
@@ -327,6 +396,27 @@ NSString * const hostURL = @"ws://localhost";
             [webSocket send:[[self messageFrame:@"Message for you sir" forSubscribeFrameData:message] frameData]];
             return;
             
+        case RBKTestScenarioStompSubscribeClientAck:
+            [webSocket send:[[self messageFrame:@"Message for you sir" forSubscribeFrameData:message] frameData]];
+            self.currentScenario = RBKTestScenarioStompAck; // switch this so we don't try to echo the ack
+            return;
+            
+        case RBKTestScenarioStompSubscribeClientNack:
+            [webSocket send:[[self incorrectMessageFrame:@"Message for you sir" forSubscribeFrameData:message] frameData]];
+            self.currentScenario = RBKTestScenarioStompNack; // switch this so we don't try to echo the nack
+            return;
+            
+        case RBKTestScenarioStompAck:
+            NSLog(@"received ack");
+            self.currentScenarioSuccessful = YES;
+            return;
+            
+        case RBKTestScenarioStompNack:
+            NSLog(@"received nack");
+            self.currentScenarioSuccessful = YES;
+            return;
+
+            
         case RBKTestScenarioStompSend:
             [webSocket send:[[self messageFrame:@"Message for you sir" forSendFrameData:message] frameData]];
             return;
@@ -371,8 +461,33 @@ NSString * const hostURL = @"ws://localhost";
     
     NSString *destination = [receivedFrame headerValueForKey:RBKStompHeaderDestination];
     NSString *subscriptionID = [receivedFrame headerValueForKey:RBKStompHeaderID];
+    NSDictionary *headers = nil;
+    // if the subscription includes an ack value of client or client-... then our message frame needs to have an ack value
+    NSString *acknowledgeMode = [receivedFrame headerValueForKey:RBKStompHeaderAck];
+    if ([acknowledgeMode isEqualToString:RBKStompAckClient] || [acknowledgeMode isEqualToString:RBKStompAckClientIndividual]) {
+        // Need to include an arbitrary value for an ack header
+        headers = @{RBKStompHeaderAck: [[NSUUID UUID] UUIDString]};
+    }
     
-    RBKStompFrame *messageFrame = [RBKStompFrame messageFrameWithDestination:destination headers:nil body:messageBody subscription:subscriptionID];
+    RBKStompFrame *messageFrame = [RBKStompFrame messageFrameWithDestination:destination headers:headers body:messageBody subscription:subscriptionID];
+    return messageFrame;
+}
+
+// used for Nack testing so that the server sends the client something it doesn't expect and the client does a Nack
+- (RBKStompFrame *)incorrectMessageFrame:(NSString *)messageBody forSubscribeFrameData:(NSData *)receivedMessageData {
+    RBKStompFrame *receivedFrame = [RBKStompFrame responseFrameFromData:receivedMessageData];
+    
+    NSString *destination = [receivedFrame headerValueForKey:RBKStompHeaderDestination];
+    NSString *subscriptionID = [[NSUUID UUID] UUIDString]; // incorrect subscription id
+    NSDictionary *headers = nil;
+    // if the subscription includes an ack value of client or client-... then our message frame needs to have an ack value
+    NSString *acknowledgeMode = [receivedFrame headerValueForKey:RBKStompHeaderAck];
+    if ([acknowledgeMode isEqualToString:RBKStompAckClient] || [acknowledgeMode isEqualToString:RBKStompAckClientIndividual]) {
+        // Need to include an arbitrary value for an ack header
+        headers = @{RBKStompHeaderAck: [[NSUUID UUID] UUIDString]};
+    }
+    
+    RBKStompFrame *messageFrame = [RBKStompFrame messageFrameWithDestination:destination headers:headers body:messageBody subscription:subscriptionID];
     return messageFrame;
 }
 

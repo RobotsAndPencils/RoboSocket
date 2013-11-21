@@ -330,6 +330,38 @@ static NSUInteger messageIdentifier;
     return self;
 }
 
+#pragma mark - Ack
+
++ (instancetype)ackFrameWithIdentifier:(NSString *)identifier {
+    return [[RBKStompFrame alloc] initAckFrameWithIdentifier:identifier];
+}
+
+- (instancetype)initAckFrameWithIdentifier:(NSString *)identifier {
+    
+    NSMutableDictionary *mutableHeaders = [NSMutableDictionary dictionary];
+    mutableHeaders[RBKStompHeaderID] = identifier;
+    
+    self = [self initFrameWithCommand:RBKStompCommandAck headers:mutableHeaders body:nil];
+    
+    return self;
+}
+
+#pragma mark - Nack
+
++ (instancetype)nackFrameWithIdentifier:(NSString *)identifier {
+    return [[RBKStompFrame alloc] initNackFrameWithIdentifier:identifier];
+}
+
+- (instancetype)initNackFrameWithIdentifier:(NSString *)identifier {
+    
+    NSMutableDictionary *mutableHeaders = [NSMutableDictionary dictionary];
+    mutableHeaders[RBKStompHeaderID] = identifier;
+    
+    self = [self initFrameWithCommand:RBKStompCommandNack headers:mutableHeaders body:nil];
+    
+    return self;
+}
+
 
 #pragma mark - Public
 

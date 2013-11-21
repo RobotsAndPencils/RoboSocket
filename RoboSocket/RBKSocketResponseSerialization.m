@@ -591,7 +591,20 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
     if ([stompFrame.command isEqualToString:RBKStompCommandMessage]) {
         
         NSString *destination = [stompFrame headerValueForKey:RBKStompHeaderDestination];
-        [self.delegate messageForDestination:destination  responseFrame:stompFrame];
+        [self.delegate messageForDestination:destination responseFrame:stompFrame];
+        
+        // if we need to acknowledge it, then do so
+        if ([self.delegate shouldAcknowledgeMessageForDestination:destination responseFrame:stompFrame]) {
+            NSString *ackIdentifier = [stompFrame headerValueForKey:RBKStompHeaderAck];
+            // Now we send our acknowledgement
+            RBKStompFrame *acknowledgeFrame = [RBKStompFrame ackFrameWithIdentifier:ackIdentifier];
+            [self.delegate sendSocketOperationWithFrame:acknowledgeFrame];
+        } else if ([self.delegate shouldNackMessageForDestination:destination responseFrame:stompFrame]) {
+            NSString *ackIdentifier = [stompFrame headerValueForKey:RBKStompHeaderAck];
+            // Now we send our acknowledgement
+            RBKStompFrame *nackFrame = [RBKStompFrame nackFrameWithIdentifier:ackIdentifier];
+            [self.delegate sendSocketOperationWithFrame:nackFrame];
+        }
     }
     
     return stompFrame;

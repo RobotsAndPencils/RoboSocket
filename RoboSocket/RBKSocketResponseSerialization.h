@@ -25,6 +25,8 @@
 
 #import "RBKStompFrame.h"
 
+@class RBKSocketOperation;
+
 /**
  The `AFURLResponseSerialization` protocol is adopted by an object that decodes data into a more useful object representation, according to details in the server response. Response serializers may additionally perform validation on the incoming response and data.
 
@@ -208,6 +210,9 @@
 @protocol RBKSocketStompResponseSerializerDelegate <NSObject>
 
 - (void)messageForDestination:(NSString *)destination responseFrame:(RBKStompFrame *)responseFrame;
+- (BOOL)shouldAcknowledgeMessageForDestination:(NSString *)destination responseFrame:(RBKStompFrame *)responseFrame;
+- (BOOL)shouldNackMessageForDestination:(NSString *)destination responseFrame:(RBKStompFrame *)responseFrame;
+- (RBKSocketOperation *)sendSocketOperationWithFrame:(id)frame;
 
 @end
 
