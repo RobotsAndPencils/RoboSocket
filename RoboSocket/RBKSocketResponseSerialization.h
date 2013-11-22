@@ -212,7 +212,8 @@
 - (void)messageForDestination:(NSString *)destination responseFrame:(RBKStompFrame *)responseFrame;
 - (BOOL)shouldAcknowledgeMessageForDestination:(NSString *)destination responseFrame:(RBKStompFrame *)responseFrame;
 - (BOOL)shouldNackMessageForDestination:(NSString *)destination responseFrame:(RBKStompFrame *)responseFrame;
-- (RBKSocketOperation *)sendSocketOperationWithFrame:(id)frame;
+- (RBKSocketOperation *)sendAckOrNackFrame:(id)frame;
+- (void)heartbeatReceived;
 
 @end
 

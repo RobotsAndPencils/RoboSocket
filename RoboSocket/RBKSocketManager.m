@@ -10,7 +10,7 @@
 #import "RoboSocket.h"
 #import "RBKSocketOperation.h"
 
-@interface RBKSocketManager () <RBKSocketControlDelegate>
+@interface RBKSocketManager () <RBKSocketControlDelegate, RBKSocketFrameDelegate>
 
 @property (strong, nonatomic) NSOperationQueue *operationQueue;
 @property (strong, nonatomic) RoboSocket *socket;
@@ -19,6 +19,9 @@
 
 @property (strong, nonatomic) NSMutableDictionary *subscriptionHandlers;
 @property (strong, nonatomic) NSMutableDictionary *subscriptionAcknowledgementModes;
+@property (assign, nonatomic) NSUInteger heartbeatCounter;
+@property (strong, nonatomic) NSDate *previousReceivedHeartbeatDate;
+@property (strong, nonatomic) NSDate *mostRecentlyReceivedHeartbeatDate;
 
 @end
 
@@ -30,6 +33,7 @@
     if (self) {
         _socket = [[RoboSocket alloc] initWithSocketURL:socketURL];
         _socket.controlDelegate = self;
+        _socket.defaultFrameDelegate = self;
         _operationQueue = [[NSOperationQueue alloc] init];
         _pendingOperations = [NSMutableArray array];
         _socketOpen = NO;
@@ -37,6 +41,9 @@
         _responseSerializer = [RBKSocketStringResponseSerializer serializer];
         _subscriptionHandlers = [NSMutableDictionary dictionary];
         _subscriptionAcknowledgementModes = [NSMutableDictionary dictionary];
+        _heartbeatCounter = 0;
+        _previousReceivedHeartbeatDate = [NSDate distantPast];
+        _mostRecentlyReceivedHeartbeatDate = [NSDate distantPast];
         [self openSocket];
     }
     return self;
@@ -62,8 +69,12 @@
                                          success:(void (^)(RBKSocketOperation *operation, id responseObject))success
                                          failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure {
     
+    BOOL expectResponse = NO;
+    if (success || failure) {
+        expectResponse = YES;
+    }
     
-    RBKSocketOperation *operation = [self.requestSerializer requestOperationWithFrame:frame];
+    RBKSocketOperation *operation = [self.requestSerializer requestOperationWithFrame:frame expectResponse:expectResponse];
     
     operation.responseSerializer = self.responseSerializer;
     // operation.shouldUseCredentialStorage = self.shouldUseCredentialStorage;
@@ -72,10 +83,14 @@
     
     // give the operation the socket to use?
     operation.socket = self.socket;
-    [operation setCompletionBlockWithSuccess:success failure:failure];
+    if (expectResponse) {
+        [operation setCompletionBlockWithSuccess:success failure:failure];
+    }
 
     return operation;
 }
+
+
 
 - (RBKSocketOperation *)sendSocketOperationWithFrame:(id)frame
                                              success:(void (^)(RBKSocketOperation *operation, id responseObject))success
@@ -99,6 +114,11 @@
     return operation;
 }
 
+- (RBKSocketOperation *)sendSocketOperationWithFrame:(id)frame {
+    RBKSocketOperation *operation = [self sendSocketOperationWithFrame:frame success:nil failure:nil];
+    return operation;
+}
+
 - (void)openSocket {
     [self.socket openSocket];
 }
@@ -109,6 +129,19 @@
     while (self.socketOpen && [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.1]]); // don't advance until the socket has closed completely
     // NSLog(@"Socket Closed");
 }
+
+- (NSUInteger)numberOfReceivedHeartbeats {
+    return self.heartbeatCounter;
+}
+
+- (NSTimeInterval)timeSinceMostRecentHeartbeat {
+    return [[NSDate date] timeIntervalSinceDate:self.mostRecentlyReceivedHeartbeatDate];
+}
+
+- (NSTimeInterval)timeIntervalBetweenPreviousHeartbeats {
+    return [self.mostRecentlyReceivedHeartbeatDate timeIntervalSinceDate:self.previousReceivedHeartbeatDate];
+}
+
 
 #pragma mark - RBKSocketControlDelegate
 
@@ -128,6 +161,18 @@
     
     self.socketOpen = NO; // operations should now be stored
 }
+
+#pragma mark - RBKSocketFrameDelegate
+
+- (void)webSocket:(RoboSocket *)webSocket didReceiveFrame:(id)message {
+    
+    NSError *error = nil;
+    [self.responseSerializer responseObjectForResponseFrame:message error:&error];
+    if (error) {
+        NSLog(@"Serializer error: %@", [error localizedDescription]);
+    }
+}
+
 
 #pragma mark - RBKSocketStompRequestSerializerDelegate
 
@@ -204,7 +249,7 @@
     return shouldNack;
 }
 
-- (RBKSocketOperation *)sendSocketOperationWithFrame:(RBKStompFrame *)frame {
+- (RBKSocketOperation *)sendAckOrNackFrame:(RBKStompFrame *)frame {
     
     RBKSocketOperation *operation = [self sendSocketOperationWithFrame:frame success:^(RBKSocketOperation *operation, id responseObject) {
         NSLog(@"sent frame");
@@ -214,6 +259,12 @@
     return operation;
 }
 
+- (void)heartbeatReceived {
+    // keep track of when the last heartbeat was received.
+    self.heartbeatCounter += 1;
+    self.previousReceivedHeartbeatDate = self.mostRecentlyReceivedHeartbeatDate;
+    self.mostRecentlyReceivedHeartbeatDate = [NSDate date];
+}
 
 
 @end

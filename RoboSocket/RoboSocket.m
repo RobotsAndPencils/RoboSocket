@@ -49,7 +49,12 @@
 // RoboSocket needs two delegates - one for messages and one for control
 - (void)webSocket:(SRWebSocket *)webSocket didReceiveMessage:(id)frame {
     // NSLog(@"received frame %@", frame);
-    [self.frameDelegate webSocket:self didReceiveFrame:frame];
+    
+    if (self.responseFrameDelegate) { // this is an expected response
+        [self.responseFrameDelegate webSocket:self didReceiveFrame:frame];
+    } else { // this is not an expected response
+        [self.defaultFrameDelegate webSocket:self didReceiveFrame:frame];
+    }
 }
 
 - (void)webSocketDidOpen:(SRWebSocket *)webSocket {
@@ -59,7 +64,7 @@
 
 - (void)webSocket:(SRWebSocket *)webSocket didFailWithError:(NSError *)error {
     // NSLog(@"socket failed");
-    [self.frameDelegate webSocket:self didFailWithError:error];
+    [self.responseFrameDelegate webSocket:self didFailWithError:error];
 }
 
 - (void)webSocket:(SRWebSocket *)webSocket didCloseWithCode:(NSInteger)code reason:(NSString *)reason wasClean:(BOOL)wasClean {

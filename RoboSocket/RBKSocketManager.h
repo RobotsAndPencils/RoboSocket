@@ -35,11 +35,27 @@
 
 - (void)closeSocket;
 
+- (NSUInteger)numberOfReceivedHeartbeats;
+- (NSTimeInterval)timeSinceMostRecentHeartbeat;
+- (NSTimeInterval)timeIntervalBetweenPreviousHeartbeats;
+
+/**
+ Inclusion of success and/or failure block indicates that this operation expects a response as part of the operation
+ */
 - (RBKSocketOperation *)socketOperationWithFrame:(id)frame
                                          success:(void (^)(RBKSocketOperation *operation, id responseObject))success
                                          failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure;
 
+/**
+ Inclusion of success and/or failure block indicates that this operation expects a response as part of the operation
+ */
 - (RBKSocketOperation *)sendSocketOperationWithFrame:(id)frame
                                              success:(void (^)(RBKSocketOperation *operation, id responseObject))success
                                              failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure;
+
+/**
+ Lack of success and/or failure block indicates that this operation does not expect a response as part of the operation. Responses may come outside the operation
+ */
+- (RBKSocketOperation *)sendSocketOperationWithFrame:(id)frame;
+
 @end

@@ -25,6 +25,7 @@ extern NSString * const RBKStompCommandReceipt;
 extern NSString * const RBKStompCommandSend;
 extern NSString * const RBKStompCommandSubscribe;
 extern NSString * const RBKStompCommandUnsubscribe;
+extern NSString * const RBKStompCommandHeartbeat; // NOT A REAL COMMAND: results in a frame containing only EOL
 
 extern NSString * const RBKStompLineFeed;
 extern NSString * const RBKStompNullCharString;
@@ -55,10 +56,14 @@ extern NSString * const RBKStompAckClient;
 extern NSString * const RBKStompAckClientIndividual;
 
 struct RBKStompHeartbeat {
-    NSUInteger transmitIntervalMinimum; // 0 for can't send, otherwise smallest number of milliseconds between heart-beats that it can guarantee
+    NSUInteger supportedTransmitIntervalMinimum; // 0 for can't send, otherwise smallest number of milliseconds between heart-beats that it can guarantee
     NSUInteger desiredReceptionIntervalMinimum; // 0 for doesn't want, otherwise desired number of milliseconds between heart-beats
 };
 typedef struct RBKStompHeartbeat RBKStompHeartbeat;
+
+extern const RBKStompHeartbeat RBKStompHeartbeatZero;
+NSString *NSStringFromStompHeartbeat(RBKStompHeartbeat heartbeat);
+RBKStompHeartbeat RBKStompHeartbeatFromString(NSString *heartbeatString);
 
 @class RBKStompFrame;
 
@@ -82,10 +87,12 @@ typedef void (^RBKStompFrameHandler)(RBKStompFrame *responseFrame);
 #pragma mark - Connect
 
 + (instancetype)connectFrameWithLogin:(NSString *)login passcode:(NSString *)passcode host:(NSString *)host;
++ (instancetype)connectFrameWithLogin:(NSString *)login passcode:(NSString *)passcode host:(NSString *)host supportedOutgoingHeartbeat:(NSUInteger)outgoingHeartbeat desiredIncomingHeartbeat:(NSUInteger)incomingHeartbeat;
 
 #pragma mark - Connected
 
 + (instancetype)connectedFrameWithVersion:(NSString *)version;
++ (instancetype)connectedFrameWithVersion:(NSString *)version heartbeat:(RBKStompHeartbeat)heartbeat;
 
 #pragma mark - Subscription
 
@@ -110,6 +117,10 @@ typedef void (^RBKStompFrameHandler)(RBKStompFrame *responseFrame);
 #pragma mark - Nack
 
 + (instancetype)nackFrameWithIdentifier:(NSString *)identifier;
+
+#pragma mark - Heartbeat
+
++ (instancetype)heartbeatFrame;
 
 #pragma mark - Public
 

@@ -587,6 +587,8 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
     }
     
     RBKStompFrame *stompFrame = [RBKStompFrame responseFrameFromData:responseFrame];
+    
+    [self.delegate heartbeatReceived]; // any time we receive a frame, consider it a heartbeat
     // if this is a MESSAGE frame then we need to tell our delegate so the response frame handler can be called
     if ([stompFrame.command isEqualToString:RBKStompCommandMessage]) {
         
@@ -598,12 +600,12 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
             NSString *ackIdentifier = [stompFrame headerValueForKey:RBKStompHeaderAck];
             // Now we send our acknowledgement
             RBKStompFrame *acknowledgeFrame = [RBKStompFrame ackFrameWithIdentifier:ackIdentifier];
-            [self.delegate sendSocketOperationWithFrame:acknowledgeFrame];
+            [self.delegate sendAckOrNackFrame:acknowledgeFrame];
         } else if ([self.delegate shouldNackMessageForDestination:destination responseFrame:stompFrame]) {
             NSString *ackIdentifier = [stompFrame headerValueForKey:RBKStompHeaderAck];
             // Now we send our acknowledgement
             RBKStompFrame *nackFrame = [RBKStompFrame nackFrameWithIdentifier:ackIdentifier];
-            [self.delegate sendSocketOperationWithFrame:nackFrame];
+            [self.delegate sendAckOrNackFrame:nackFrame];
         }
     }
     

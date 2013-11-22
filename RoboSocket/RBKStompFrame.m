@@ -26,6 +26,7 @@ NSString * const RBKStompCommandReceipt = @"RECEIPT";
 NSString * const RBKStompCommandSend = @"SEND";
 NSString * const RBKStompCommandSubscribe = @"SUBSCRIBE";
 NSString * const RBKStompCommandUnsubscribe = @"UNSUBSCRIBE";
+NSString * const RBKStompCommandHeartbeat = @"HEARTBEAT";
 
 // all caps STOMP vs lowercase Stomp
 
@@ -62,7 +63,7 @@ NSString * const RBKStompAckClientIndividual = @"client-individual"; // the ackn
 const RBKStompHeartbeat RBKStompHeartbeatZero = {0,0};
 
 NSString *NSStringFromStompHeartbeat(RBKStompHeartbeat heartbeat) {
-    return [NSString stringWithFormat:@"%d,%d", heartbeat.transmitIntervalMinimum, heartbeat.desiredReceptionIntervalMinimum];
+    return [NSString stringWithFormat:@"%d,%d", heartbeat.supportedTransmitIntervalMinimum, heartbeat.desiredReceptionIntervalMinimum];
 }
 
 RBKStompHeartbeat RBKStompHeartbeatFromString(NSString *heartbeatString) {
@@ -73,7 +74,10 @@ RBKStompHeartbeat RBKStompHeartbeatFromString(NSString *heartbeatString) {
         RBKStompHeartbeat heartbeat = {0, 0};
         return heartbeat;
     }
-    RBKStompHeartbeat heartbeat = {[[heartbeatComponents firstObject] unsignedIntegerValue], [[heartbeatComponents lastObject] unsignedIntegerValue]};
+    
+    NSString *supportedOutgoing = [heartbeatComponents firstObject];
+    NSString *desiredIncoming = [heartbeatComponents lastObject];
+    RBKStompHeartbeat heartbeat = {[supportedOutgoing integerValue], [desiredIncoming integerValue]};
     return heartbeat;
 }
 
@@ -135,6 +139,9 @@ static NSUInteger messageIdentifier;
     // get our command
     NSString *command = [[contents firstObject] copy];
     [contents removeObject:[contents firstObject]];
+    if (!command && [contents count] == 0) { // don't have a command or other body, then this is just a heartbeat
+        command = RBKStompCommandHeartbeat;
+    }
     
     // get headers and body
     NSMutableDictionary *headers = [NSMutableDictionary dictionary];
@@ -180,10 +187,22 @@ static NSUInteger messageIdentifier;
 
 #pragma mark - Connect
 
-+ (instancetype)connectFrameWithLogin:(NSString *)login passcode:(NSString *)passcode host:(NSString *)host { // heartbeat?  handlers?
++ (instancetype)connectFrameWithLogin:(NSString *)login passcode:(NSString *)passcode host:(NSString *)host { // handlers?
     
     return [RBKStompFrame connectMessageHeaders:@{RBKStompHeaderLogin: login, RBKStompHeaderPasscode: passcode, RBKStompHeaderHost: host}];
 }
+
+/**
+ Heartbeat values are in milliseconds
+ */
++ (instancetype)connectFrameWithLogin:(NSString *)login passcode:(NSString *)passcode host:(NSString *)host supportedOutgoingHeartbeat:(NSUInteger)outgoingHeartbeat desiredIncomingHeartbeat:(NSUInteger)incomingHeartbeat { // handlers / delegate?
+    
+    RBKStompHeartbeat heartbeat = {outgoingHeartbeat, incomingHeartbeat};
+    NSString *heartbeatString = NSStringFromStompHeartbeat(heartbeat);
+    
+    return [RBKStompFrame connectMessageHeaders:@{RBKStompHeaderLogin: login, RBKStompHeaderPasscode: passcode, RBKStompHeaderHost: host, RBKStompHeaderHeartBeat: heartbeatString}];
+}
+
 
 + (instancetype)connectMessageHeaders:(NSDictionary *)headers { // heartbeat?
     
@@ -207,6 +226,12 @@ static NSUInteger messageIdentifier;
 + (instancetype)connectedFrameWithVersion:(NSString *)version {
     
     return [RBKStompFrame connectedMessageWithHeaders:@{RBKStompHeaderVersion: version}];
+}
+
++ (instancetype)connectedFrameWithVersion:(NSString *)version heartbeat:(RBKStompHeartbeat)heartbeat {
+    
+    NSString *heartbeatString = NSStringFromStompHeartbeat(heartbeat);
+    return [RBKStompFrame connectedMessageWithHeaders:@{RBKStompHeaderVersion: version, RBKStompHeaderHeartBeat: heartbeatString}];
 }
 
 + (instancetype)connectedMessageWithHeaders:(NSDictionary *)headers {
@@ -362,10 +387,29 @@ static NSUInteger messageIdentifier;
     return self;
 }
 
+#pragma mark - Heartbeat
+
++ (instancetype)heartbeatFrame {
+    return [[RBKStompFrame alloc] initHeartbeatFrame];
+}
+
+- (instancetype)initHeartbeatFrame {
+    
+    self = [self initFrameWithCommand:RBKStompCommandHeartbeat headers:nil body:nil];
+    
+    return self;
+}
+
 
 #pragma mark - Public
 
 - (NSString *)frameString {
+    
+    // if this is a heartbeat, then just print HEARTBEAT
+    if ([self.command isEqualToString:RBKStompCommandHeartbeat]) {
+        return RBKStompCommandHeartbeat;
+    }
+    
     NSMutableString *frameString = [NSMutableString stringWithString:[self.command stringByAppendingString:RBKStompLineFeed]];
     NSMutableDictionary *mutableHeaders = [self.headers mutableCopy];
     // include content-type and content-length if we have a body
@@ -397,6 +441,11 @@ static NSUInteger messageIdentifier;
 }
 
 - (NSData *)frameData {
+    
+    // if this is a heartbeat, then just return EOL
+    if ([self.command isEqualToString:RBKStompCommandHeartbeat]) {
+        return [RBKStompLineFeed dataUsingEncoding:NSUTF8StringEncoding];
+    }
     
     return [[self frameString] dataUsingEncoding:NSUTF8StringEncoding];
 }

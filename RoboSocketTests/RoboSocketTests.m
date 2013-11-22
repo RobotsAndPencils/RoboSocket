@@ -22,6 +22,8 @@
 typedef NS_ENUM(NSUInteger, RBKTestScenario) {
     RBKTestScenarioNone = 0,
     RBKTestScenarioStompConnect,
+    RBKTestScenarioStompConnectServerHeartbeat,
+    RBKTestScenarioStompConnectClientHeartbeat,
     RBKTestScenarioStompSubscribe,
     RBKTestScenarioStompSubscribeClientAck,
     RBKTestScenarioStompSubscribeClientNack,
@@ -29,6 +31,8 @@ typedef NS_ENUM(NSUInteger, RBKTestScenario) {
     RBKTestScenarioStompNack,
     RBKTestScenarioStompSend,
     RBKTestScenarioStompUnsubscribe,
+    RBKTestScenarioStompServerHeartbeat,
+    RBKTestScenarioStompClientHeartbeat,
 };
 
 
@@ -187,7 +191,7 @@ NSString * const hostURL = @"ws://localhost";
     __block RBKStompFrame *responseMessage = nil;
     [self.socketManager sendSocketOperationWithFrame:connectMessage success:^(RBKSocketOperation *operation, id responseObject) {
         success = YES;
-        responseMessage = responseObject; // probably isn't echo'd per the standard, but this at least validates the conversion to/from RBKStompMessage
+        responseMessage = responseObject; // This response object will be a CONNECTED frame
     } failure:^(RBKSocketOperation *operation, NSError *error) {
         success = NO;
     }];
@@ -197,8 +201,47 @@ NSString * const hostURL = @"ws://localhost";
     expect([responseMessage headerValueForKey:RBKStompHeaderVersion]).will.equal(RBKStompVersion1_2);
 }
 
+- (void)testSocketEchoSTOMPConnectServerHeartbeat {
+    
+    self.currentScenario = RBKTestScenarioStompConnectServerHeartbeat;
+    
+    self.socketManager.requestSerializer = [RBKSocketStompRequestSerializer serializer];
+    RBKSocketStompRequestSerializer *requestSerializer = (id)self.socketManager.requestSerializer;
+    requestSerializer.delegate = self.socketManager;
+    self.socketManager.responseSerializer = [RBKSocketStompResponseSerializer serializer];
+    RBKSocketStompResponseSerializer *responseSerializer = (id)self.socketManager.responseSerializer;
+    responseSerializer.delegate = self.socketManager;
+    
+    RBKStompFrame *connectMessage = [RBKStompFrame connectFrameWithLogin:@"username" passcode:@"passcode" host:[[NSURL URLWithString:hostURL] host] supportedOutgoingHeartbeat:0 desiredIncomingHeartbeat:1000];
+    
+    __block BOOL success = NO;
+    __block RBKStompFrame *responseMessage = nil;
+    __block NSDate *dateSinceLastResponse = [NSDate distantPast];
+    [self.socketManager sendSocketOperationWithFrame:connectMessage success:^(RBKSocketOperation *operation, id responseObject) {
+        success = YES;
+        responseMessage = responseObject; // This response object will be a CONNECTED frame
+        dateSinceLastResponse = [NSDate date];
+    } failure:^(RBKSocketOperation *operation, NSError *error) {
+        success = NO;
+    }];
+    expect(success).will.beTruthy();
+    expect([self.socketManager numberOfReceivedHeartbeats]).will.beGreaterThanOrEqualTo(2);
+    
+    // this is a block just so we can see
+    NSTimeInterval(^expectedInterval)(void) = ^(void) {
+        NSTimeInterval actual = [self.socketManager timeIntervalBetweenPreviousHeartbeats];
+        NSTimeInterval expected = [[NSDate date] timeIntervalSinceDate:dateSinceLastResponse];
+        NSLog(@"actual interval: %f\nexpected interval: %f", actual, expected);
+        return expected;
+    };
+    
+    expect([self.socketManager timeIntervalBetweenPreviousHeartbeats]).will.beCloseToWithin(expectedInterval(), 0.5);
+}
+
+
 // Connection:
-// heart beat is not tested
+// client heartbeat is not tested
+// unreceived client/server heartbeat is not tested
 // negotiation error is not tested
 
 - (void)testSocketSTOMPSubscribe {
@@ -391,6 +434,33 @@ NSString * const hostURL = @"ws://localhost";
         case RBKTestScenarioStompConnect:
             [webSocket send:[[self connectedFrameForConnectFrameData:message] frameData]];
             return;
+            
+        case RBKTestScenarioStompConnectServerHeartbeat: {
+            RBKStompFrame *connectedFrame = [self connectedFrameForConnectFrameData:message];
+            [webSocket send:[connectedFrame frameData]];
+            // schedule a heartbeat to be sent
+            NSString *heartbeatString = [connectedFrame headerValueForKey:RBKStompHeaderHeartBeat];
+            RBKStompHeartbeat heartbeat = RBKStompHeartbeatFromString(heartbeatString);
+            
+            if (heartbeat.supportedTransmitIntervalMinimum > 0) {
+                // send a heartbeat in the supported interval
+                self.currentScenario = RBKTestScenarioStompServerHeartbeat;
+                __weak typeof(self)weakSelf = self;
+                double delayInSeconds = heartbeat.supportedTransmitIntervalMinimum/1000.0;
+                dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
+                dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+                    [webSocket send:[[weakSelf heartbeatFrame] frameData]];
+                });
+            }
+            
+            NSLog(@"change the mode to watch for a heartbeat");
+            return;
+        }
+        case RBKTestScenarioStompConnectClientHeartbeat:
+            [webSocket send:[[self connectedFrameForConnectFrameData:message] frameData]];
+            // sechedule a heartbeat expect a heart beat to be received
+            NSLog(@"-0-0-");
+            return;
 
         case RBKTestScenarioStompSubscribe:
             [webSocket send:[[self messageFrame:@"Message for you sir" forSubscribeFrameData:message] frameData]];
@@ -415,7 +485,6 @@ NSString * const hostURL = @"ws://localhost";
             NSLog(@"received nack");
             self.currentScenarioSuccessful = YES;
             return;
-
             
         case RBKTestScenarioStompSend:
             [webSocket send:[[self messageFrame:@"Message for you sir" forSendFrameData:message] frameData]];
@@ -424,6 +493,17 @@ NSString * const hostURL = @"ws://localhost";
         case RBKTestScenarioStompUnsubscribe:
             [webSocket send:[[self messageFrame:@"Message for you sir" forSendFrameData:message] frameData]];
             return;
+            
+        case RBKTestScenarioStompServerHeartbeat:
+            NSLog(@"received Server Heartbeat");
+            // check our heartbeat interval?
+            self.currentScenarioSuccessful = YES; // this is never going to fire because its the client receiving the heartbeat, not us
+            return;
+            
+        case RBKTestScenarioStompClientHeartbeat:
+            NSLog(@"received Client Heartbeat"); // this will eventually fire
+            return;
+
 
         default:
             break;
@@ -451,8 +531,32 @@ NSString * const hostURL = @"ws://localhost";
     RBKStompFrame *receivedFrame = [RBKStompFrame responseFrameFromData:receivedMessageData];
 
     NSString *acceptedVersion = [receivedFrame headerValueForKey:RBKStompHeaderAcceptVersion];
+    NSString *heartbeatString = [receivedFrame headerValueForKey:RBKStompHeaderHeartBeat];
     
-    RBKStompFrame *connectedFrame = [RBKStompFrame connectedFrameWithVersion:acceptedVersion];
+    RBKStompFrame *connectedFrame = nil;
+    if (heartbeatString) {
+        RBKStompHeartbeat heartbeat = RBKStompHeartbeatFromString(heartbeatString);
+        // check if we need to include heartbeat
+        
+        if (heartbeat.supportedTransmitIntervalMinimum <= 0 && heartbeat.desiredReceptionIntervalMinimum <= 0) {
+            // no heartbeat needed
+            connectedFrame = [RBKStompFrame connectedFrameWithVersion:acceptedVersion];
+        } else {
+            RBKStompHeartbeat serverHeartbeat = RBKStompHeartbeatZero;
+            if (heartbeat.supportedTransmitIntervalMinimum > 0) {
+                serverHeartbeat.desiredReceptionIntervalMinimum = heartbeat.supportedTransmitIntervalMinimum; // just match what the client asks for now
+            }
+            if (heartbeat.desiredReceptionIntervalMinimum > 0) {
+                serverHeartbeat.supportedTransmitIntervalMinimum = heartbeat.desiredReceptionIntervalMinimum; // just match what the client asks for now
+            }
+            // server heartbeat to match the client
+            connectedFrame = [RBKStompFrame connectedFrameWithVersion:acceptedVersion heartbeat:serverHeartbeat];
+        }
+    } else {
+        // no heartbeat needed
+        connectedFrame = [RBKStompFrame connectedFrameWithVersion:acceptedVersion];
+    }
+    
     return connectedFrame;
 }
 
@@ -503,6 +607,11 @@ NSString * const hostURL = @"ws://localhost";
     return messageFrame;
 }
 
+- (RBKStompFrame *)heartbeatFrame {
+    
+    RBKStompFrame *heartbeatFrame = [RBKStompFrame heartbeatFrame];
+    return heartbeatFrame;
+}
 
 
 @end

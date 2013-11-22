@@ -95,6 +95,7 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
 
 @property (readwrite, nonatomic, assign) RBKSocketOperationState state;
 @property (readwrite, nonatomic, assign, getter = isCancelled) BOOL cancelled;
+@property (readwrite, nonatomic, assign, getter = isResponseExpected) BOOL responseExpected;
 @property (readwrite, nonatomic, strong) id requestFrame;
 @property (readwrite, nonatomic, strong) id response; // need to deprecate this?
 @property (readwrite, nonatomic, strong) id responseObject;
@@ -133,7 +134,7 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
     return _networkRequestThread;
 }
 
-- (instancetype)initWithRequestFrame:(id)frame {
+- (instancetype)initWithRequestFrame:(id)frame expectResponse:(BOOL)expectResponse {
     NSParameterAssert(frame);
     
     self = [super init];
@@ -149,12 +150,17 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
     self.requestFrame = frame;
     
     // self.shouldUseCredentialStorage = YES;
+    self.responseExpected = expectResponse;
     
     self.state = RBKSocketOperationReadyState;
     
     // self.securityPolicy = [AFSecurityPolicy defaultPolicy];
     
     return self;
+}
+
+- (instancetype)initWithRequestFrame:(id)frame {
+    return [self initWithRequestFrame:frame expectResponse:YES];
 }
 
 - (id)responseObject {
@@ -270,7 +276,7 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
         
         // NSLog(@"start socket operation");
         
-        self.socket.frameDelegate = self;
+        self.socket.responseFrameDelegate = self;
         [self.socket sendFrame:self.requestFrame];
         
     }
@@ -283,10 +289,16 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
     if ([self isCancelled]) {
         [self finish];
     }
+    if (!self.isResponseExpected) {
+        [self finish];
+    }
 }
 
 - (void)finish {
     self.state = RBKSocketOperationFinishedState;
+    
+    self.socket.responseFrameDelegate = nil;
+    self.socket = nil;
     
     dispatch_async(dispatch_get_main_queue(), ^{
         [[NSNotificationCenter defaultCenter] postNotificationName:RBKSocketOperationDidFinishNotification object:self];
@@ -332,10 +344,6 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
     self.responseFrame = frame;
     
     [self finish];
-    
-    self.socket.frameDelegate = nil;
-    self.socket = nil;
-
 }
 
 - (void)webSocket:(RoboSocket *)webSocket didFailWithError:(NSError *)error {
@@ -344,9 +352,6 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
     self.error = error;
     
     [self finish];
-    
-    self.socket.frameDelegate = nil;
-    self.socket = nil;
 }
 
 @end

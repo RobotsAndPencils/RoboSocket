@@ -40,12 +40,14 @@
  Returns a request with the specified parameters encoded into a copy of the original request.
 
  @param request The original request.
+ @param expectResponse Indicates if this operation should complete only after a response is received
  @param parameters The parameters to be encoded.
  @param error The error that occurred while attempting to encode the request parameters.
 
  @return A serialized request.
  */
 - (RBKSocketOperation *)requestBySerializingRequest:(RBKSocketOperation *)request
+                                     expectResponse:(BOOL)expectResponse
                                      withParameters:(NSDictionary *)parameters
                                               error:(NSError *__autoreleasing *)error;
 
@@ -152,7 +154,7 @@ typedef NS_ENUM(NSUInteger, RBKSocketRequestQueryStringSerializationStyle) {
  
  @param frame The frame to be sent within a websocket frame
  */
-- (RBKSocketOperation *)requestOperationWithFrame:(id)frame;
+- (RBKSocketOperation *)requestOperationWithFrame:(id)frame expectResponse:(BOOL)expectResponse;
 
 
 @end

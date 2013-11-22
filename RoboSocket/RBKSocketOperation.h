@@ -97,8 +97,8 @@ extern NSString * const RBKSocketOperationDidFinishNotification;
 
 @property (nonatomic, strong) RoboSocket *socket;
 
-
-- (instancetype)initWithRequestFrame:(id)frame;
+- (instancetype)initWithRequestFrame:(id)frame expectResponse:(BOOL)expectResponse;
+- (instancetype)initWithRequestFrame:(id)frame; // assumes that a response is expected
 
 - (void)setCompletionBlockWithSuccess:(void (^)(RBKSocketOperation *operation, id responseObject))success
                               failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure;

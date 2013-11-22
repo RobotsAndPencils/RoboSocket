@@ -35,7 +35,8 @@
 
 @interface RoboSocket : NSObject
 
-@property (weak, nonatomic) id<RBKSocketFrameDelegate> frameDelegate;
+@property (weak, nonatomic) id<RBKSocketFrameDelegate> responseFrameDelegate;
+@property (weak, nonatomic) id<RBKSocketFrameDelegate> defaultFrameDelegate;
 @property (weak, nonatomic) id<RBKSocketControlDelegate> controlDelegate;
 
 - (instancetype)initWithSocketURL:(NSURL *)socketURL;

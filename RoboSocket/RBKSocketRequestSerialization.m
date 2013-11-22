@@ -253,12 +253,11 @@ NSArray * AFQueryStringPairsFromKeyAndValue(NSString *key, id value) {
 
 #pragma mark -
 
-- (RBKSocketOperation *)requestOperationWithFrame:(id)frame {
+- (RBKSocketOperation *)requestOperationWithFrame:(id)frame expectResponse:(BOOL)expectResponse {
     RBKSocketOperation *request = [[RBKSocketOperation alloc] initWithRequestFrame:frame];
     NSParameterAssert(frame);
 
-    request = [self requestBySerializingRequest:request withParameters:nil error:nil];
-    
+    request = [self requestBySerializingRequest:request expectResponse:expectResponse withParameters:nil error:nil];
     return request;
 
 }
@@ -266,6 +265,7 @@ NSArray * AFQueryStringPairsFromKeyAndValue(NSString *key, id value) {
 #pragma mark - AFURLRequestSerialization
 
 - (RBKSocketOperation *)requestBySerializingRequest:(RBKSocketOperation *)request
+                                     expectResponse:(BOOL)expectResponse
                                      withParameters:(NSDictionary *)parameters
                                               error:(NSError *__autoreleasing *)error
 {
@@ -986,6 +986,7 @@ typedef enum {
 #pragma mark - AFURLRequestSerialization
 
 - (RBKSocketOperation *)requestBySerializingRequest:(RBKSocketOperation *)request
+                                     expectResponse:(BOOL)expectResponse
                                      withParameters:(NSDictionary *)parameters
                                               error:(NSError *__autoreleasing *)error
 {
@@ -999,7 +1000,7 @@ typedef enum {
     
     if ([frame isKindOfClass:[NSData class]]) {
         NSString *frameAsString = [[NSString alloc] initWithData:frame encoding:NSUTF8StringEncoding];;
-        return [[RBKSocketOperation alloc] initWithRequestFrame:frameAsString];
+        return [[RBKSocketOperation alloc] initWithRequestFrame:frameAsString expectResponse:expectResponse];
     }
     
     // not sure how to (or if we should) coerce other formats into a string
@@ -1033,6 +1034,7 @@ typedef enum {
 #pragma mark - AFURLRequestSerialization
 
 - (RBKSocketOperation *)requestBySerializingRequest:(RBKSocketOperation *)request
+                                     expectResponse:(BOOL)expectResponse
                                      withParameters:(NSDictionary *)parameters
                                               error:(NSError *__autoreleasing *)error
 {
@@ -1046,7 +1048,7 @@ typedef enum {
     
     if ([frame isKindOfClass:[NSString class]]) {
         NSData *frameAsData = [frame dataUsingEncoding:NSUTF8StringEncoding];
-        return [[RBKSocketOperation alloc] initWithRequestFrame:frameAsData];
+        return [[RBKSocketOperation alloc] initWithRequestFrame:frameAsData expectResponse:expectResponse];
     }
     
     // not sure how to (or if we should) coerce other formats into a string
@@ -1082,8 +1084,9 @@ typedef enum {
 #pragma mark - AFURLRequestSerialization
 
 - (RBKSocketOperation *)requestBySerializingRequest:(RBKSocketOperation *)request
-                               withParameters:(NSDictionary *)parameters
-                                        error:(NSError *__autoreleasing *)error
+                                     expectResponse:(BOOL)expectResponse
+                                     withParameters:(NSDictionary *)parameters
+                                              error:(NSError *__autoreleasing *)error
 {
     NSParameterAssert(request);
 
@@ -1096,7 +1099,7 @@ typedef enum {
     }
 
     NSData *frameAsJSONData = [NSJSONSerialization dataWithJSONObject:frame options:self.writingOptions error:error];
-    return [[RBKSocketOperation alloc] initWithRequestFrame:frameAsJSONData];
+    return [[RBKSocketOperation alloc] initWithRequestFrame:frameAsJSONData expectResponse:expectResponse];
 }
 
 @end
@@ -1122,6 +1125,7 @@ typedef enum {
 #pragma mark - AFURLRequestSerializer
 
 - (RBKSocketOperation *)requestBySerializingRequest:(RBKSocketOperation *)request
+                                     expectResponse:(BOOL)expectResponse
                                      withParameters:(NSDictionary *)parameters
                                               error:(NSError *__autoreleasing *)error
 {
@@ -1208,6 +1212,7 @@ typedef enum {
 #pragma mark - AFURLRequestSerialization
 
 - (RBKSocketOperation *)requestBySerializingRequest:(RBKSocketOperation *)request
+                                     expectResponse:(BOOL)expectResponse
                                      withParameters:(NSDictionary *)parameters
                                               error:(NSError *__autoreleasing *)error
 {
@@ -1224,7 +1229,6 @@ typedef enum {
     RBKStompFrame *stompFrame = (RBKStompFrame *)frame;
     
     // if this is a SUBSCRIBE frame then we need to tell our delegate of our response frame handler so it can get called when we get Messages
-    
     if ([stompFrame.command isEqualToString:RBKStompCommandSubscribe]) {
         RBKStompFrameHandler frameHandler = stompFrame.responseFrameHandler;
         
@@ -1248,7 +1252,7 @@ typedef enum {
     }
     
     NSData *frameAsData = [stompFrame frameData];
-    return [[RBKSocketOperation alloc] initWithRequestFrame:frameAsData];    
+    return [[RBKSocketOperation alloc] initWithRequestFrame:frameAsData expectResponse:expectResponse];
 }
 
 @end
