@@ -55,7 +55,7 @@ NSString * const hostURL = @"ws://localhost";
 - (void)setUp {
     [super setUp];
     // Put setup code here. This method is called before the invocation of each test method in the class.
-    [Expecta setAsynchronousTestTimeout:500.0];
+    [Expecta setAsynchronousTestTimeout:5.0];
 
     self.currentScenario = RBKTestScenarioNone;
     self.currentScenarioSuccessful = NO;
@@ -229,13 +229,13 @@ NSString * const hostURL = @"ws://localhost";
     
     // this is a block just so we can see
     NSTimeInterval(^expectedInterval)(void) = ^(void) {
-        NSTimeInterval actual = [self.socketManager timeIntervalBetweenPreviousHeartbeats];
+        // NSTimeInterval actual = [self.socketManager timeIntervalBetweenPreviousHeartbeats];
         NSTimeInterval expected = [[NSDate date] timeIntervalSinceDate:dateSinceLastResponse];
-        NSLog(@"actual interval: %f\nexpected interval: %f", actual, expected);
+        // NSLog(@"actual interval: %f\nexpected interval: %f", actual, expected);
         return expected;
     };
     
-    expect([self.socketManager timeIntervalBetweenPreviousHeartbeats]).will.beCloseToWithin(expectedInterval(), 0.5);
+    expect([self.socketManager timeIntervalBetweenPreviousHeartbeats]).will.beCloseToWithin(expectedInterval(), 0.1);
 }
 
 
@@ -453,7 +453,7 @@ NSString * const hostURL = @"ws://localhost";
                 });
             }
             
-            NSLog(@"change the mode to watch for a heartbeat");
+            // NSLog(@"change the mode to watch for a heartbeat");
             return;
         }
         case RBKTestScenarioStompConnectClientHeartbeat:
@@ -477,12 +477,12 @@ NSString * const hostURL = @"ws://localhost";
             return;
             
         case RBKTestScenarioStompAck:
-            NSLog(@"received ack");
+            // NSLog(@"received ack");
             self.currentScenarioSuccessful = YES;
             return;
             
         case RBKTestScenarioStompNack:
-            NSLog(@"received nack");
+            // NSLog(@"received nack");
             self.currentScenarioSuccessful = YES;
             return;
             
