@@ -493,14 +493,8 @@ NSString * const hostURL = @"ws://localhost";
             RBKStompHeartbeat heartbeat = RBKStompHeartbeatFromString(heartbeatString);
             
             if (heartbeat.desiredReceptionIntervalMinimum > 0) {
-                // send a heartbeat in the supported interval
+                // then wait for the heartbeat
                 self.currentScenario = RBKTestScenarioStompClientHeartbeat;
-//                __weak typeof(self)weakSelf = self;
-//                double delayInSeconds = heartbeat.supportedTransmitIntervalMinimum/1000.0;
-//                dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
-//                dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-//                    [webSocket send:[[weakSelf heartbeatFrame] frameData]];
-//                });
             }
             return;
         }
