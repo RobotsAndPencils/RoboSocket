@@ -214,6 +214,7 @@
 - (BOOL)shouldNackMessageForDestination:(NSString *)destination responseFrame:(RBKStompFrame *)responseFrame;
 - (RBKSocketOperation *)sendAckOrNackFrame:(id)frame;
 - (void)heartbeatReceived;
+- (void)sendHeartbeatWithInterval:(NSTimeInterval)interval;
 
 @end
 

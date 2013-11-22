@@ -13,6 +13,7 @@
 
 extern NSString * const RBKSocketNetworkingErrorDomain;
 
+extern dispatch_queue_t socket_operation_processing_queue();
 
 @interface RBKSocketOperation : NSOperation
 

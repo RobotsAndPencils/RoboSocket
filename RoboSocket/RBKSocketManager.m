@@ -19,9 +19,14 @@
 
 @property (strong, nonatomic) NSMutableDictionary *subscriptionHandlers;
 @property (strong, nonatomic) NSMutableDictionary *subscriptionAcknowledgementModes;
-@property (assign, nonatomic) NSUInteger heartbeatCounter;
+
+@property (assign, nonatomic) NSUInteger heartbeatReceivedCounter;
 @property (strong, nonatomic) NSDate *previousReceivedHeartbeatDate;
 @property (strong, nonatomic) NSDate *mostRecentlyReceivedHeartbeatDate;
+
+@property (assign, nonatomic) NSUInteger heartbeatSentCounter;
+@property (assign, nonatomic) NSTimeInterval heartbeatInterval;
+@property (strong, nonatomic) dispatch_source_t heartbeatTimer;
 
 @end
 
@@ -41,9 +46,11 @@
         _responseSerializer = [RBKSocketStringResponseSerializer serializer];
         _subscriptionHandlers = [NSMutableDictionary dictionary];
         _subscriptionAcknowledgementModes = [NSMutableDictionary dictionary];
-        _heartbeatCounter = 0;
+        _heartbeatReceivedCounter = 0;
         _previousReceivedHeartbeatDate = [NSDate distantPast];
         _mostRecentlyReceivedHeartbeatDate = [NSDate distantPast];
+        _heartbeatSentCounter = 0;
+        _heartbeatInterval = 0;
         [self openSocket];
     }
     return self;
@@ -131,7 +138,7 @@
 }
 
 - (NSUInteger)numberOfReceivedHeartbeats {
-    return self.heartbeatCounter;
+    return self.heartbeatReceivedCounter;
 }
 
 - (NSTimeInterval)timeSinceMostRecentHeartbeat {
@@ -142,6 +149,9 @@
     return [self.mostRecentlyReceivedHeartbeatDate timeIntervalSinceDate:self.previousReceivedHeartbeatDate];
 }
 
+- (NSUInteger)numberOfSentHeartbeats {
+    return self.heartbeatSentCounter;
+}
 
 #pragma mark - RBKSocketControlDelegate
 
@@ -203,6 +213,11 @@
     }
 }
 
+- (void)heartbeatSent {
+    self.heartbeatSentCounter += 1;
+    [self rescheduleHeartbeatTimer];
+}
+
 #pragma mark - RBKSocketStompResponseSerializerDelegate
 
 - (void)messageForDestination:(NSString *)destination responseFrame:(RBKStompFrame *)responseFrame {
@@ -261,9 +276,58 @@
 
 - (void)heartbeatReceived {
     // keep track of when the last heartbeat was received.
-    self.heartbeatCounter += 1;
+    self.heartbeatReceivedCounter += 1;
     self.previousReceivedHeartbeatDate = self.mostRecentlyReceivedHeartbeatDate;
     self.mostRecentlyReceivedHeartbeatDate = [NSDate date];
+}
+
+/** 
+ @param interval The interval within which a heartbeat should be sent, in seconds.
+ */
+- (void)sendHeartbeatWithInterval:(NSTimeInterval)interval {
+    
+    // schedule a heartbeat to be sent in the interval, unless we send a message before that interval expires, at which point we should cancel our scheduled interval and reschedule another one
+    self.heartbeatInterval = interval;
+    [self rescheduleHeartbeatTimer];
+}
+
+#pragma mark - Private
+
+- (void)rescheduleHeartbeatTimer {
+    
+    if (self.heartbeatTimer) {
+        dispatch_source_cancel(self.heartbeatTimer);
+    }
+    if (self.heartbeatInterval <= 0) {
+        return;
+    }
+    
+    // Instead of an NSTimer (which needs a runloop) use a dispatch_source
+    // use 5% leeway
+    uint64_t leeway = self.heartbeatInterval / 5.0 * NSEC_PER_SEC;
+    self.heartbeatTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, socket_operation_processing_queue());
+
+    // set the timer to fire once.  Set the start time but set the interval to forever
+    dispatch_source_set_timer(self.heartbeatTimer,
+                              dispatch_time(DISPATCH_TIME_NOW, self.heartbeatInterval * NSEC_PER_SEC),
+                              DISPATCH_TIME_FOREVER,
+                              leeway);
+    
+    __weak typeof(self)weakSelf = self;
+    dispatch_source_set_event_handler(self.heartbeatTimer, ^{
+        __strong __typeof(weakSelf)strongSelf = weakSelf;
+        [strongSelf sendHeartbeat];
+        dispatch_source_cancel(strongSelf.heartbeatTimer); // after firing once, don't fire again
+
+    });
+    
+    // start the timer
+    dispatch_resume(self.heartbeatTimer);
+}
+
+- (void)sendHeartbeat {
+    RBKStompFrame *heartbeatFrame = [RBKStompFrame heartbeatFrame];
+    [self sendSocketOperationWithFrame:heartbeatFrame];
 }
 
 

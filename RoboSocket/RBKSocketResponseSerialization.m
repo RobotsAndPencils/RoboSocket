@@ -607,6 +607,15 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
             RBKStompFrame *nackFrame = [RBKStompFrame nackFrameWithIdentifier:ackIdentifier];
             [self.delegate sendAckOrNackFrame:nackFrame];
         }
+    } else if ([stompFrame.command isEqualToString:RBKStompCommandConnected]) {
+        // check our connected frame to see if we need to support a heartbeat
+        NSString *heartbeatString = [stompFrame headerValueForKey:RBKStompHeaderHeartBeat];
+        RBKStompHeartbeat heartbeat = RBKStompHeartbeatFromString(heartbeatString);
+        if (heartbeat.desiredReceptionIntervalMinimum > 0) { // assume that we can support the desired interval
+            // desiredReceptionIntervalMinimum is in milliseconds, but we'll deal in seconds
+            // tell our delegate that we need to send a heartbeat every interval
+            [self.delegate sendHeartbeatWithInterval:heartbeat.desiredReceptionIntervalMinimum / 1000.0];
+        }
     }
     
     return stompFrame;

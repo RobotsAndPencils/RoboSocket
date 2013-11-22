@@ -178,7 +178,7 @@ NSString * const hostURL = @"ws://localhost";
 // JSON to string?
 // JSON to data?
 
-- (void)testSocketEchoSTOMPConnect {
+- (void)testSocketSTOMPConnect {
     
     self.currentScenario = RBKTestScenarioStompConnect;
 
@@ -201,7 +201,7 @@ NSString * const hostURL = @"ws://localhost";
     expect([responseMessage headerValueForKey:RBKStompHeaderVersion]).will.equal(RBKStompVersion1_2);
 }
 
-- (void)testSocketEchoSTOMPConnectServerHeartbeat {
+- (void)testSocketSTOMPConnectServerHeartbeat {
     
     self.currentScenario = RBKTestScenarioStompConnectServerHeartbeat;
     
@@ -227,7 +227,7 @@ NSString * const hostURL = @"ws://localhost";
     expect(success).will.beTruthy();
     expect([self.socketManager numberOfReceivedHeartbeats]).will.beGreaterThanOrEqualTo(2);
     
-    // this is a block just so we can see
+    // this is a block just so we can see (during development of the tests) the difference between the expected heartbeat interval and when the block gets called
     NSTimeInterval(^expectedInterval)(void) = ^(void) {
         // NSTimeInterval actual = [self.socketManager timeIntervalBetweenPreviousHeartbeats];
         NSTimeInterval expected = [[NSDate date] timeIntervalSinceDate:dateSinceLastResponse];
@@ -236,6 +236,35 @@ NSString * const hostURL = @"ws://localhost";
     };
     
     expect([self.socketManager timeIntervalBetweenPreviousHeartbeats]).will.beCloseToWithin(expectedInterval(), 0.1);
+}
+
+- (void)testSocketSTOMPConnectClientHeartbeat {
+    
+    self.currentScenario = RBKTestScenarioStompConnectClientHeartbeat;
+    
+    self.socketManager.requestSerializer = [RBKSocketStompRequestSerializer serializer];
+    RBKSocketStompRequestSerializer *requestSerializer = (id)self.socketManager.requestSerializer;
+    requestSerializer.delegate = self.socketManager;
+    self.socketManager.responseSerializer = [RBKSocketStompResponseSerializer serializer];
+    RBKSocketStompResponseSerializer *responseSerializer = (id)self.socketManager.responseSerializer;
+    responseSerializer.delegate = self.socketManager;
+    
+    RBKStompFrame *connectMessage = [RBKStompFrame connectFrameWithLogin:@"username" passcode:@"passcode" host:[[NSURL URLWithString:hostURL] host] supportedOutgoingHeartbeat:1000 desiredIncomingHeartbeat:0];
+    
+    __block BOOL success = NO;
+    __block RBKStompFrame *responseMessage = nil;
+    __block NSDate *dateSinceLastResponse = [NSDate distantPast];
+    [self.socketManager sendSocketOperationWithFrame:connectMessage success:^(RBKSocketOperation *operation, id responseObject) {
+        success = YES;
+        responseMessage = responseObject; // This response object will be a CONNECTED frame
+        
+        dateSinceLastResponse = [NSDate date];
+    } failure:^(RBKSocketOperation *operation, NSError *error) {
+        success = NO;
+    }];
+    expect(success).will.beTruthy();
+    expect([self.socketManager numberOfSentHeartbeats]).will.beGreaterThanOrEqualTo(2);
+    expect(self.isCurrentScenarioSuccessful).will.beTruthy(); // indicates that the client heartbeat was received
 }
 
 
@@ -456,12 +485,25 @@ NSString * const hostURL = @"ws://localhost";
             // NSLog(@"change the mode to watch for a heartbeat");
             return;
         }
-        case RBKTestScenarioStompConnectClientHeartbeat:
-            [webSocket send:[[self connectedFrameForConnectFrameData:message] frameData]];
-            // sechedule a heartbeat expect a heart beat to be received
-            NSLog(@"-0-0-");
+        case RBKTestScenarioStompConnectClientHeartbeat: {
+            RBKStompFrame *connectedFrame = [self connectedFrameForConnectFrameData:message];
+            [webSocket send:[connectedFrame frameData]];
+            // schedule a heartbeat to be sent
+            NSString *heartbeatString = [connectedFrame headerValueForKey:RBKStompHeaderHeartBeat];
+            RBKStompHeartbeat heartbeat = RBKStompHeartbeatFromString(heartbeatString);
+            
+            if (heartbeat.desiredReceptionIntervalMinimum > 0) {
+                // send a heartbeat in the supported interval
+                self.currentScenario = RBKTestScenarioStompClientHeartbeat;
+//                __weak typeof(self)weakSelf = self;
+//                double delayInSeconds = heartbeat.supportedTransmitIntervalMinimum/1000.0;
+//                dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
+//                dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+//                    [webSocket send:[[weakSelf heartbeatFrame] frameData]];
+//                });
+            }
             return;
-
+        }
         case RBKTestScenarioStompSubscribe:
             [webSocket send:[[self messageFrame:@"Message for you sir" forSubscribeFrameData:message] frameData]];
             return;
@@ -495,13 +537,12 @@ NSString * const hostURL = @"ws://localhost";
             return;
             
         case RBKTestScenarioStompServerHeartbeat:
-            NSLog(@"received Server Heartbeat");
-            // check our heartbeat interval?
+            // NSLog(@"received Server Heartbeat");
             self.currentScenarioSuccessful = YES; // this is never going to fire because its the client receiving the heartbeat, not us
             return;
             
         case RBKTestScenarioStompClientHeartbeat:
-            NSLog(@"received Client Heartbeat"); // this will eventually fire
+            self.currentScenarioSuccessful = YES; // this will fire once the client sends the heartbeat
             return;
 
 

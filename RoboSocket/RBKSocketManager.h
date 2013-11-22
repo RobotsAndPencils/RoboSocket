@@ -38,6 +38,7 @@
 - (NSUInteger)numberOfReceivedHeartbeats;
 - (NSTimeInterval)timeSinceMostRecentHeartbeat;
 - (NSTimeInterval)timeIntervalBetweenPreviousHeartbeats;
+- (NSUInteger)numberOfSentHeartbeats;
 
 /**
  Inclusion of success and/or failure block indicates that this operation expects a response as part of the operation

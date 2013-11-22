@@ -16,24 +16,24 @@ typedef NS_ENUM(NSInteger, RBKSocketOperationState) {
 };
 
 
-static dispatch_queue_t http_request_operation_processing_queue() {
-    static dispatch_queue_t af_http_request_operation_processing_queue;
+dispatch_queue_t socket_operation_processing_queue() {
+    static dispatch_queue_t rbk_socket_operation_processing_queue;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        af_http_request_operation_processing_queue = dispatch_queue_create("com.robotsandpencils.networking.websocket.processing", DISPATCH_QUEUE_CONCURRENT);
+        rbk_socket_operation_processing_queue = dispatch_queue_create("com.robotsandpencils.networking.websocket.processing", DISPATCH_QUEUE_CONCURRENT);
     });
     
-    return af_http_request_operation_processing_queue;
+    return rbk_socket_operation_processing_queue;
 }
 
-static dispatch_group_t http_request_operation_completion_group() {
-    static dispatch_group_t af_http_request_operation_completion_group;
+static dispatch_group_t socket_operation_completion_group() {
+    static dispatch_group_t rbk_socket_request_operation_completion_group;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        af_http_request_operation_completion_group = dispatch_group_create();
+        rbk_socket_request_operation_completion_group = dispatch_group_create();
     });
     
-    return af_http_request_operation_completion_group;
+    return rbk_socket_request_operation_completion_group;
 }
 
 static NSString * const kRBKSocketNetworkingLockName = @"com.robotsandpencils.networking.operation.lock";
@@ -209,10 +209,10 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
             dispatch_group_enter(self.completionGroup);
         }
         
-        dispatch_async(http_request_operation_processing_queue(), ^{
+        dispatch_async(socket_operation_processing_queue(), ^{
             if (self.error) {
                 if (failure) {
-                    dispatch_group_async(self.completionGroup ?: http_request_operation_completion_group(), self.completionQueue ?: dispatch_get_main_queue(), ^{
+                    dispatch_group_async(self.completionGroup ?: socket_operation_completion_group(), self.completionQueue ?: dispatch_get_main_queue(), ^{
                         failure(self, self.error);
                     });
                 }
@@ -220,13 +220,13 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
                 id responseObject = self.responseObject;
                 if (self.error) {
                     if (failure) {
-                        dispatch_group_async(self.completionGroup ?: http_request_operation_completion_group(), self.completionQueue ?: dispatch_get_main_queue(), ^{
+                        dispatch_group_async(self.completionGroup ?: socket_operation_completion_group(), self.completionQueue ?: dispatch_get_main_queue(), ^{
                             failure(self, self.error);
                         });
                     }
                 } else {
                     if (success) {
-                        dispatch_group_async(self.completionGroup ?: http_request_operation_completion_group(), self.completionQueue ?: dispatch_get_main_queue(), ^{
+                        dispatch_group_async(self.completionGroup ?: socket_operation_completion_group(), self.completionQueue ?: dispatch_get_main_queue(), ^{
                             success(self, responseObject);
                         });
                     }

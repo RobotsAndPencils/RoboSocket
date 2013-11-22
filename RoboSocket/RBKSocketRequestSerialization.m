@@ -1227,6 +1227,7 @@ typedef enum {
     }
     
     RBKStompFrame *stompFrame = (RBKStompFrame *)frame;
+    [self.delegate heartbeatSent]; // well, the heartbeat isn't actually sent, but it will be
     
     // if this is a SUBSCRIBE frame then we need to tell our delegate of our response frame handler so it can get called when we get Messages
     if ([stompFrame.command isEqualToString:RBKStompCommandSubscribe]) {
