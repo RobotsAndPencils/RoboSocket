@@ -363,7 +363,14 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
         }
     }
     
-    NSString *responseString = [[NSString alloc] initWithData:responseFrame encoding:NSUTF8StringEncoding];
+    NSString *responseString;
+    if ([responseFrame isKindOfClass:[NSString class]]) {
+        responseString = responseFrame;
+    }
+    else {
+        responseString = [[NSString alloc] initWithData:responseFrame encoding:NSUTF8StringEncoding];
+    }
+
     if (responseString && ![responseString isEqualToString:@" "]) {
         // Workaround for a bug in NSJSONSerialization when Unicode character escape codes are used instead of the actual character
         // See http://stackoverflow.com/a/12843465/157142
