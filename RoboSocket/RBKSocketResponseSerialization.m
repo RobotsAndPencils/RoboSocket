@@ -1,6 +1,6 @@
-// AFSerialization.h
+// RBKSerialization.h
 //
-// Copyright (c) 2013 AFNetworking (http://afnetworking.com)
+// Copyright (c) 2013 RBKNetworking (http://afnetworking.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -60,7 +60,7 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
 //    if (response && [response isKindOfClass:[NSHTTPURLResponse class]]) {
 //        if (self.acceptableStatusCodes && ![self.acceptableStatusCodes containsIndex:(NSUInteger)response.statusCode]) {
 //            NSDictionary *userInfo = @{
-//                                       NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedStringFromTable(@"Request failed: %@ (%d)", @"AFNetworking", nil), [NSHTTPURLResponse localizedStringForStatusCode:response.statusCode], response.statusCode],
+//                                       NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedStringFromTable(@"Request failed: %@ (%d)", @"RBKNetworking", nil), [NSHTTPURLResponse localizedStringForStatusCode:response.statusCode], response.statusCode],
 //                                       NSURLErrorFailingURLErrorKey:[response URL],
 //                                       RBKSocketNetworkingOperationFailingURLResponseErrorKey: response
 //                                       };
@@ -73,7 +73,7 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
 //            // Don't invalidate content type if there is no content
 //            if ([data length] > 0) {
 //                NSDictionary *userInfo = @{
-//                                           NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedStringFromTable(@"Request failed: unacceptable content-type: %@", @"AFNetworking", nil), [response MIMEType]],
+//                                           NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedStringFromTable(@"Request failed: unacceptable content-type: %@", @"RBKNetworking", nil), [response MIMEType]],
 //                                           NSURLErrorFailingURLErrorKey:[response URL],
 //                                           RBKSocketNetworkingOperationFailingURLResponseErrorKey: response
 //                                           };
@@ -377,8 +377,8 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
             }
         } else {
             NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
-            [userInfo setValue:NSLocalizedStringFromTable(@"Data failed decoding as a UTF-8 string", nil, @"AFNetworking") forKey:NSLocalizedDescriptionKey];
-            [userInfo setValue:[NSString stringWithFormat:NSLocalizedStringFromTable(@"Could not decode string: %@", nil, @"AFNetworking"), responseString] forKey:NSLocalizedFailureReasonErrorKey];
+            [userInfo setValue:NSLocalizedStringFromTable(@"Data failed decoding as a UTF-8 string", nil, @"RBKNetworking") forKey:NSLocalizedDescriptionKey];
+            [userInfo setValue:[NSString stringWithFormat:NSLocalizedStringFromTable(@"Could not decode string: %@", nil, @"RBKNetworking"), responseString] forKey:NSLocalizedFailureReasonErrorKey];
             if (error) {
                 *error = [[NSError alloc] initWithDomain:RBKSocketNetworkingErrorDomain code:NSURLErrorCannotDecodeContentData userInfo:userInfo];
             }
@@ -490,7 +490,7 @@ extern NSString * const RBKSocketNetworkingOperationFailingURLResponseErrorKey;
     return _acceptablePathExtension;
 }
 
-#pragma mark - AFURLResponseSerialization
+#pragma mark - RBKURLResponseSerialization
 
 - (id)responseObjectForResponseFrame:(id)responseFrame
                                error:(NSError *__autoreleasing *)error

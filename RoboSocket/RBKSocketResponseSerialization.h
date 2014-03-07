@@ -1,6 +1,6 @@
-// AFSerialization.h
+// RBKSerialization.h
 //
-// Copyright (c) 2013 AFNetworking (http://afnetworking.com)
+// Copyright (c) 2013 RBKNetworking (http://afnetworking.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,7 @@
 @class RBKSocketOperation;
 
 /**
- The `AFURLResponseSerialization` protocol is adopted by an object that decodes data into a more useful object representation, according to details in the server response. Response serializers may additionally perform validation on the incoming response and data.
+ The `RBKURLResponseSerialization` protocol is adopted by an object that decodes data into a more useful object representation, according to details in the server response. Response serializers may additionally perform validation on the incoming response and data.
 
  For example, a JSON response serializer may check for an acceptable status code (`2XX` range) and content type (`application/json`), decoding a valid JSON response into an object.
  */
@@ -51,9 +51,9 @@
 #pragma mark -
 
 /**
- `AFHTTPResponseSerializer` conforms to the `AFURLRequestSerialization` & `AFURLResponseSerialization` protocols, offering a concrete base implementation of query string / URL form-encoded parameter serialization and default request headers, as well as response status code and content type validation.
+ `RBKHTTPResponseSerializer` conforms to the `RBKURLRequestSerialization` & `RBKURLResponseSerialization` protocols, offering a concrete base implementation of query string / URL form-encoded parameter serialization and default request headers, as well as response status code and content type validation.
 
- Any request or response serializer dealing with HTTP is encouraged to subclass `AFHTTPResponseSerializer` in order to ensure consistent default behavior.
+ Any request or response serializer dealing with HTTP is encouraged to subclass `RBKHTTPResponseSerializer` in order to ensure consistent default behavior.
  */
 @interface RBKSocketResponseSerializer : NSObject <RBKSocketResponseSerialization>
 
@@ -100,7 +100,7 @@
 
 
 /**
- `RBKSocketStringResponseSerializer` is a subclass of `AFHTTPResponseSerializer` that validates and decodes NSString responses.
+ `RBKSocketStringResponseSerializer` is a subclass of `RBKHTTPResponseSerializer` that validates and decodes NSString responses.
  */
 @interface RBKSocketStringResponseSerializer : RBKSocketResponseSerializer
 
@@ -119,7 +119,7 @@
 @end
 
 /**
- `RBKSocketDataResponseSerializer` is a subclass of `AFHTTPResponseSerializer` that validates and decodes NSData responses.
+ `RBKSocketDataResponseSerializer` is a subclass of `RBKHTTPResponseSerializer` that validates and decodes NSData responses.
  */
 @interface RBKSocketDataResponseSerializer : RBKSocketResponseSerializer
 
@@ -140,7 +140,7 @@
 
 
 /**
- `RBKSocketJSONResponseSerializer` is a subclass of `AFHTTPResponseSerializer` that validates and decodes JSON responses.
+ `RBKSocketJSONResponseSerializer` is a subclass of `RBKHTTPResponseSerializer` that validates and decodes JSON responses.
 
  */
 @interface RBKSocketJSONResponseSerializer : RBKSocketResponseSerializer
@@ -162,9 +162,9 @@
 #pragma mark -
 
 /**
- `AFXMLParserSerializer` is a subclass of `AFHTTPResponseSerializer` that validates and decodes XML responses as an `NSXMLParser` objects.
+ `RBKXMLParserSerializer` is a subclass of `RBKHTTPResponseSerializer` that validates and decodes XML responses as an `NSXMLParser` objects.
 
- By default, `AFXMLParserSerializer` accepts the following MIME types, which includes the official standard, `application/xml`, as well as other commonly-used types:
+ By default, `RBKXMLParserSerializer` accepts the following MIME types, which includes the official standard, `application/xml`, as well as other commonly-used types:
 
  - `application/xml`
  - `text/xml`
@@ -176,9 +176,9 @@
 #pragma mark -
 
 /**
- `AFPropertyListSerializer` is a subclass of `AFHTTPResponseSerializer` that validates and decodes XML responses as an `NSXMLDocument` objects.
+ `RBKPropertyListSerializer` is a subclass of `RBKHTTPResponseSerializer` that validates and decodes XML responses as an `NSXMLDocument` objects.
 
- By default, `AFPropertyListSerializer` accepts the following MIME types:
+ By default, `RBKPropertyListSerializer` accepts the following MIME types:
 
  - `application/x-plist`
  */

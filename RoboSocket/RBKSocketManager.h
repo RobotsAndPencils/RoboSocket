@@ -17,7 +17,7 @@
 
 
 /**
- Requests created with `requestWithMethod:URLString:parameters:` & `multipartFormRequestWithMethod:URLString:parameters:constructingBodyWithBlock:` are constructed with a set of default headers using a parameter serialization specified by this property. By default, this is set to an instance of `AFHTTPRequestSerializer`, which serializes query string parameters for `GET`, `HEAD`, and `DELETE` requests, or otherwise URL-form-encodes HTTP message bodies.
+ Requests created with `requestWithMethod:URLString:parameters:` & `multipartFormRequestWithMethod:URLString:parameters:constructingBodyWithBlock:` are constructed with a set of default headers using a parameter serialization specified by this property. By default, this is set to an instance of `RBKHTTPRequestSerializer`, which serializes query string parameters for `GET`, `HEAD`, and `DELETE` requests, or otherwise URL-form-encodes HTTP message bodies.
  
  @warning `requestSerializer` must not be `nil`.
  */
@@ -30,6 +30,7 @@
  */
 @property (nonatomic, strong) RBKSocketResponseSerializer <RBKSocketResponseSerialization> * responseSerializer;
 
+@property (assign, nonatomic, getter = socketIsOpen) BOOL socketOpen;
 
 - (instancetype)initWithSocketURL:(NSURL *)socketURL;
 

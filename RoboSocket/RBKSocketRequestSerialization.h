@@ -1,6 +1,6 @@
-// AFSerialization.h
+// RBKSerialization.h
 //
-// Copyright (c) 2013 AFNetworking (http://afnetworking.com)
+// Copyright (c) 2013 RBKNetworking (http://afnetworking.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,7 @@
 @class RBKSocketOperation;
 
 /**
- The `AFURLRequestSerialization` protocol is adopted by an object that encodes parameters for a specified HTTP requests. Request serializers may encode parameters as query strings, HTTP bodies, setting the appropriate HTTP header fields as necessary.
+ The `RBKURLRequestSerialization` protocol is adopted by an object that encodes parameters for a specified HTTP requests. Request serializers may encode parameters as query strings, HTTP bodies, setting the appropriate HTTP header fields as necessary.
 
  For example, a JSON request serializer may set the HTTP body of the request to a JSON representation, and set the `Content-Type` HTTP header field value to `application/json`.
  */
@@ -65,9 +65,9 @@ typedef NS_ENUM(NSUInteger, RBKSocketRequestQueryStringSerializationStyle) {
 @protocol RBKSocketMultipartFormData;
 
 /**
- `AFHTTPRequestSerializer` conforms to the `AFURLRequestSerialization` & `AFURLResponseSerialization` protocols, offering a concrete base implementation of query string / URL form-encoded parameter serialization and default request headers, as well as response status code and content type validation.
+ `RBKHTTPRequestSerializer` conforms to the `RBKURLRequestSerialization` & `RBKURLResponseSerialization` protocols, offering a concrete base implementation of query string / URL form-encoded parameter serialization and default request headers, as well as response status code and content type validation.
 
- Any request or response serializer dealing with HTTP is encouraged to subclass `AFHTTPRequestSerializer` in order to ensure consistent default behavior.
+ Any request or response serializer dealing with HTTP is encouraged to subclass `RBKHTTPRequestSerializer` in order to ensure consistent default behavior.
  */
 @interface RBKSocketRequestSerializer : NSObject <RBKSocketRequestSerialization>
 
@@ -134,7 +134,7 @@ typedef NS_ENUM(NSUInteger, RBKSocketRequestQueryStringSerializationStyle) {
 
  @param style The serialization style.
 
- @see AFHTTPRequestQueryStringSerializationStyle
+ @see RBKHTTPRequestQueryStringSerializationStyle
  */
 - (void)setQueryStringSerializationWithStyle:(RBKSocketRequestQueryStringSerializationStyle)style;
 
@@ -150,8 +150,8 @@ typedef NS_ENUM(NSUInteger, RBKSocketRequestQueryStringSerializationStyle) {
 ///-------------------------------
 
 /**
- Creates `RBKSocketOperation` 
- 
+ Creates `RBKSocketOperation`
+
  @param frame The frame to be sent within a websocket frame
  */
 - (RBKSocketOperation *)requestOperationWithFrame:(id)frame expectResponse:(BOOL)expectResponse;
@@ -161,13 +161,13 @@ typedef NS_ENUM(NSUInteger, RBKSocketRequestQueryStringSerializationStyle) {
 
 #pragma mark -
 
-extern NSUInteger const kAFUploadStream3GSuggestedPacketSize;
-extern NSTimeInterval const kAFUploadStream3GSuggestedDelay;
+extern NSUInteger const kRBKUploadStream3GSuggestedPacketSize;
+extern NSTimeInterval const kRBKUploadStream3GSuggestedDelay;
 
 /**
- The `AFMultipartFormData` protocol defines the methods supported by the parameter in the block argument of `AFHTTPRequestSerializer -multipartFormRequestWithMethod:URLString:parameters:constructingBodyWithBlock:`.
+ The `RBKMultipartFormData` protocol defines the methods supported by the parameter in the block argument of `RBKHTTPRequestSerializer -multipartFormRequestWithMethod:URLString:parameters:constructingBodyWithBlock:`.
  */
-@protocol AFMultipartFormData
+@protocol RBKMultipartFormData
 
 /**
  Appends the HTTP header `Content-Disposition: file; filename=#{generated filename}; name=#{name}"` and `Content-Type: #{generated mimeType}`, followed by the encoded file data and the multipart form boundary.
@@ -252,7 +252,7 @@ extern NSTimeInterval const kAFUploadStream3GSuggestedDelay;
 /**
  Throttles request bandwidth by limiting the packet size and adding a delay for each chunk read from the upload stream.
 
- When uploading over a 3G or EDGE connection, requests may fail with "request body stream exhausted". Setting a maximum packet size and delay according to the recommended values (`kAFUploadStream3GSuggestedPacketSize` and `kAFUploadStream3GSuggestedDelay`) lowers the risk of the input stream exceeding its allocated bandwidth. Unfortunately, there is no definite way to distinguish between a 3G, EDGE, or LTE connection over `NSURLConnection`. As such, it is not recommended that you throttle bandwidth based solely on network reachability. Instead, you should consider checking for the "request body stream exhausted" in a failure block, and then retrying the request with throttled bandwidth.
+ When uploading over a 3G or EDGE connection, requests may fail with "request body stream exhausted". Setting a maximum packet size and delay according to the recommended values (`kRBKUploadStream3GSuggestedPacketSize` and `kRBKUploadStream3GSuggestedDelay`) lowers the risk of the input stream exceeding its allocated bandwidth. Unfortunately, there is no definite way to distinguish between a 3G, EDGE, or LTE connection over `NSURLConnection`. As such, it is not recommended that you throttle bandwidth based solely on network reachability. Instead, you should consider checking for the "request body stream exhausted" in a failure block, and then retrying the request with throttled bandwidth.
 
  @param numberOfBytes Maximum packet size, in number of bytes. The default packet size for an input stream is 16kb.
  @param delay Duration of delay each time a packet is read. By default, no delay is set.
@@ -271,10 +271,10 @@ extern NSTimeInterval const kAFUploadStream3GSuggestedDelay;
 
  @see -throttleBandwidthWithPacketSize:delay:
 
- `kAFUploadStream3GSuggestedPacketSize`
+ `kRBKUploadStream3GSuggestedPacketSize`
  Maximum packet size, in number of bytes. Equal to 16kb.
 
- `kAFUploadStream3GSuggestedDelay`
+ `kRBKUploadStream3GSuggestedDelay`
  Duration of delay each time a packet is read. Equal to 0.2 seconds.
  */
 
@@ -344,7 +344,7 @@ extern NSTimeInterval const kAFUploadStream3GSuggestedDelay;
 
 @end
 
-@interface AFPropertyListRequestSerializer : RBKSocketRequestSerializer
+@interface RBKPropertyListRequestSerializer : RBKSocketRequestSerializer
 
 /**
  The property list format. Possible values are described in "NSPropertyListFormat".

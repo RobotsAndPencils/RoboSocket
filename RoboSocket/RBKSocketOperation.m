@@ -154,7 +154,7 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
     
     self.state = RBKSocketOperationReadyState;
     
-    // self.securityPolicy = [AFSecurityPolicy defaultPolicy];
+    // self.securityPolicy = [RBKSecurityPolicy defaultPolicy];
     
     return self;
 }
@@ -200,7 +200,7 @@ static inline BOOL RBKSocketStateTransitionIsValid(RBKSocketOperationState fromS
 - (void)setCompletionBlockWithSuccess:(void (^)(RBKSocketOperation *operation, id responseObject))success
                               failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure
 {
-    // completionBlock is manually nilled out in AFURLConnectionOperation to break the retain cycle.
+    // completionBlock is manually nilled out in RBKURLConnectionOperation to break the retain cycle.
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-retain-cycles"
 #pragma clang diagnostic ignored "-Wgnu"

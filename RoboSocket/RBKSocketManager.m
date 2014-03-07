@@ -15,7 +15,6 @@
 @property (strong, nonatomic) NSOperationQueue *operationQueue;
 @property (strong, nonatomic) RoboSocket *socket;
 @property (strong, nonatomic) NSMutableArray *pendingOperations;
-@property (assign, nonatomic, getter = socketIsOpen) BOOL socketOpen;
 
 @property (strong, nonatomic) NSMutableDictionary *subscriptionHandlers;
 @property (strong, nonatomic) NSMutableDictionary *subscriptionAcknowledgementModes;
