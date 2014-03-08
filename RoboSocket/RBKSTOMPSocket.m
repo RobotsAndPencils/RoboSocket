@@ -1,20 +1,16 @@
 //
-//  RBKSocketManager.m
+//  RBKSTOMPSocket.m
 //  RoboSocket
 //
 //  Created by David Anderson on 11/1/2013.
 //  Copyright (c) 2013 Robots and Pencils Inc. All rights reserved.
 //
 
-#import "RBKSocketManager.h"
+#import "RBKSTOMPSocket.h"
 #import "RoboSocket.h"
 #import "RBKSocketOperation.h"
 
-@interface RBKSocketManager () <RBKSocketControlDelegate, RBKSocketFrameDelegate>
-
-@property (strong, nonatomic) NSOperationQueue *operationQueue;
-@property (strong, nonatomic) RoboSocket *socket;
-@property (strong, nonatomic) NSMutableArray *pendingOperations;
+@interface RBKSTOMPSocket () <RBKSocketStompRequestSerializerDelegate, RBKSocketStompResponseSerializerDelegate>
 
 @property (strong, nonatomic) NSMutableDictionary *subscriptionHandlers;
 @property (strong, nonatomic) NSMutableDictionary *subscriptionAcknowledgementModes;
@@ -30,19 +26,11 @@
 @end
 
 
-@implementation RBKSocketManager
+@implementation RBKSTOMPSocket
 
 - (instancetype)initWithSocketURL:(NSURL *)socketURL {
-    self = [super init];
+    self = [super initWithSocketURL:socketURL];
     if (self) {
-        _socket = [[RoboSocket alloc] initWithSocketURL:socketURL];
-        _socket.controlDelegate = self;
-        _socket.defaultFrameDelegate = self;
-        _operationQueue = [[NSOperationQueue alloc] init];
-        _pendingOperations = [NSMutableArray array];
-        _socketOpen = NO;
-        _requestSerializer = [RBKSocketStringRequestSerializer serializer];
-        _responseSerializer = [RBKSocketStringResponseSerializer serializer];
         _subscriptionHandlers = [NSMutableDictionary dictionary];
         _subscriptionAcknowledgementModes = [NSMutableDictionary dictionary];
         _heartbeatReceivedCounter = 0;
@@ -50,90 +38,9 @@
         _mostRecentlyReceivedHeartbeatDate = [NSDate distantPast];
         _heartbeatSentCounter = 0;
         _heartbeatInterval = 0;
-        [self openSocket];
     }
+
     return self;
-}
-
-#pragma mark -
-
-- (void)setRequestSerializer:(RBKSocketRequestSerializer <RBKSocketRequestSerialization> *)requestSerializer {
-    NSParameterAssert(requestSerializer);
-    
-    _requestSerializer = requestSerializer;
-}
-
-- (void)setResponseSerializer:(RBKSocketResponseSerializer <RBKSocketResponseSerialization> *)responseSerializer {
-    NSParameterAssert(responseSerializer);
-    
-    _responseSerializer = responseSerializer;
-}
-
-#pragma mark -
-
-- (RBKSocketOperation *)socketOperationWithFrame:(id)frame
-                                         success:(void (^)(RBKSocketOperation *operation, id responseObject))success
-                                         failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure {
-    
-    BOOL expectResponse = NO;
-    if (success || failure) {
-        expectResponse = YES;
-    }
-    
-    RBKSocketOperation *operation = [self.requestSerializer requestOperationWithFrame:frame expectResponse:expectResponse];
-    
-    operation.responseSerializer = self.responseSerializer;
-    // operation.shouldUseCredentialStorage = self.shouldUseCredentialStorage;
-    // operation.credential = self.credential;
-    // operation.securityPolicy = self.securityPolicy;
-    
-    // give the operation the socket to use?
-    operation.socket = self.socket;
-    if (expectResponse) {
-        [operation setCompletionBlockWithSuccess:success failure:failure];
-    }
-
-    return operation;
-}
-
-
-
-- (RBKSocketOperation *)sendSocketOperationWithFrame:(id)frame
-                                             success:(void (^)(RBKSocketOperation *operation, id responseObject))success
-                                             failure:(void (^)(RBKSocketOperation *operation, NSError *error))failure {
-    RBKSocketOperation *operation = [self socketOperationWithFrame:frame success:success failure:failure];
-    
-    if (!operation) {
-        NSLog(@"Failed to create a socket operation");
-        NSError *error = [NSError errorWithDomain:RBKSocketNetworkingErrorDomain code:-1 userInfo:nil];
-        if (failure) {
-            failure(nil, error);
-        }
-        return nil;
-    }
-    
-    if (self.socketIsOpen) {
-        [self.operationQueue addOperation:operation]; // can't send until the socket is opened
-    } else {
-        [self.pendingOperations addObject:operation];
-    }
-    return operation;
-}
-
-- (RBKSocketOperation *)sendSocketOperationWithFrame:(id)frame {
-    RBKSocketOperation *operation = [self sendSocketOperationWithFrame:frame success:nil failure:nil];
-    return operation;
-}
-
-- (void)openSocket {
-    [self.socket openSocket];
-}
-
-- (void)closeSocket {
-    [self.socket closeSocket];
-    
-    while (self.socketOpen && [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.1]]); // don't advance until the socket has closed completely
-    // NSLog(@"Socket Closed");
 }
 
 - (NSUInteger)numberOfReceivedHeartbeats {
@@ -151,37 +58,6 @@
 - (NSUInteger)numberOfSentHeartbeats {
     return self.heartbeatSentCounter;
 }
-
-#pragma mark - RBKSocketControlDelegate
-
-- (void)webSocketDidOpen:(RoboSocket *)webSocket {
-
-    for (RBKSocketOperation *operation in self.pendingOperations) {
-        [self.operationQueue addOperation:operation]; // now that the socket is open, send them all
-    }
-    [self.pendingOperations removeAllObjects];
-    
-    // track if socket is open/closed
-    self.socketOpen = YES; // now new operations will sent
-    
-}
-
-- (void)webSocket:(RoboSocket *)webSocket didCloseWithCode:(NSInteger)code reason:(NSString *)reason wasClean:(BOOL)wasClean {
-    
-    self.socketOpen = NO; // operations should now be stored
-}
-
-#pragma mark - RBKSocketFrameDelegate
-
-- (void)webSocket:(RoboSocket *)webSocket didReceiveFrame:(id)message {
-    
-    NSError *error = nil;
-    [self.responseSerializer responseObjectForResponseFrame:message error:&error];
-    if (error) {
-        NSLog(@"Serializer error: %@", [error localizedDescription]);
-    }
-}
-
 
 #pragma mark - RBKSocketStompRequestSerializerDelegate
 

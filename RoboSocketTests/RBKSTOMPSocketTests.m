@@ -1,6 +1,6 @@
 //
-//  RoboSocketTests.m
-//  RoboSocketTests
+//  RBKSTOMPSocketTests.m
+//  RBKSTOMPSocketTests
 //
 //  Created by David Anderson on 10/16/2013.
 //  Copyright (c) 2013 Robots and Pencils Inc. All rights reserved.
@@ -11,10 +11,7 @@
 #define EXP_SHORTHAND YES
 #import <Expecta/Expecta.h>
 
-#import "RBKSocketManager.h"
-#import "RBKSocketRequestSerialization.h"
-#import "RBKSocketResponseSerialization.h"
-#import "RBKStompFrame.h"
+#import "RBKSTOMPSocket.h"
 
 #import <SocketRocket/SRServerSocket.h>
 #import <SocketRocket/SRWebSocket.h>
@@ -35,13 +32,12 @@ typedef NS_ENUM(NSUInteger, RBKTestScenario) {
     RBKTestScenarioStompClientHeartbeat,
 };
 
-
-// NSString * const hostURL = @"ws://echo.websocket.org";
+//    NSString * const hostURL = @"ws://echo.websocket.org";
 NSString * const hostURL = @"ws://localhost";
 
-@interface RoboSocketTests : XCTestCase <SRWebSocketDelegate>
+@interface RBKSTOMPSocketTests : XCTestCase <SRWebSocketDelegate>
 
-@property (strong, nonatomic) RBKSocketManager *socketManager;
+@property (strong, nonatomic) RBKSTOMPSocket *stompSocket;
 @property (strong, nonatomic) SRServerSocket *stubSocket;
 
 @property (assign, nonatomic, getter = isFinished) BOOL socketOpen;
@@ -50,10 +46,11 @@ NSString * const hostURL = @"ws://localhost";
 
 @end
 
-@implementation RoboSocketTests
+@implementation RBKSTOMPSocketTests
 
 - (void)setUp {
     [super setUp];
+
     // Put setup code here. This method is called before the invocation of each test method in the class.
     [Expecta setAsynchronousTestTimeout:5.0];
 
@@ -68,7 +65,7 @@ NSString * const hostURL = @"ws://localhost";
     NSString *hostWithPort = [NSString stringWithFormat:@"%@:%d", hostURL, port];
     // NSLog(@"Server-style websocket listing on port %@", hostWithPort);
     
-    self.socketManager = [[RBKSocketManager alloc] initWithSocketURL:[NSURL URLWithString:hostWithPort]];
+    self.stompSocket = [[RBKSTOMPSocket alloc] initWithSocketURL:[NSURL URLWithString:hostWithPort]];
 }
 
 - (void)tearDown {
@@ -81,118 +78,21 @@ NSString * const hostURL = @"ws://localhost";
     [super tearDown];
 }
 
-- (void)testSocketEchoString {
-    
-    __block BOOL success = NO;
-    NSString *sentMessage = @"Hello, World!";
-    __block NSString *responseMessage = nil;
-    [self.socketManager sendSocketOperationWithFrame:sentMessage success:^(RBKSocketOperation *operation, id responseObject) {
-        success = YES;
-        responseMessage = responseObject;
-    } failure:^(RBKSocketOperation *operation, NSError *error) {
-        success = NO;
-    }];
-    expect(success).will.beTruthy();
-    expect(responseMessage).will.equal(sentMessage);
-}
-
-- (void)testSocketEchoDataToString {
-    
-    __block BOOL success = NO;
-    NSString *stringMessage = @"Hello, World!";
-    NSData *sentMessage = [stringMessage dataUsingEncoding:NSUTF8StringEncoding];
-    __block NSData *responseMessage = nil;
-    [self.socketManager sendSocketOperationWithFrame:sentMessage success:^(RBKSocketOperation *operation, id responseObject) {
-        success = YES;
-        responseMessage = responseObject;
-    } failure:^(RBKSocketOperation *operation, NSError *error) {
-        success = NO;
-    }];
-    expect(success).will.beTruthy();
-    expect(responseMessage).willNot.equal(sentMessage); // using string serializers, we can feed it data, it gets converted to string, and we get a string response
-    expect(responseMessage).will.equal(stringMessage);
-}
-
-- (void)testSocketEchoData {
-    
-    self.socketManager.requestSerializer = [RBKSocketDataRequestSerializer serializer];
-    self.socketManager.responseSerializer = [RBKSocketDataResponseSerializer serializer];
-    
-    __block BOOL success = NO;
-    NSString *stringMessage = @"Hello, World!";
-    NSData *sentMessage = [stringMessage dataUsingEncoding:NSUTF8StringEncoding];
-    __block NSData *responseMessage = nil;
-    [self.socketManager sendSocketOperationWithFrame:sentMessage success:^(RBKSocketOperation *operation, id responseObject) {
-        success = YES;
-        responseMessage = responseObject;
-    } failure:^(RBKSocketOperation *operation, NSError *error) {
-        success = NO;
-    }];
-    expect(success).will.beTruthy();
-    expect(responseMessage).will.equal(sentMessage); // using data serializers, we can feed it data, and we get a data response
-    expect(responseMessage).willNot.equal(stringMessage);
-}
-
-- (void)testSocketEchoStringToData {
-    
-    self.socketManager.requestSerializer = [RBKSocketDataRequestSerializer serializer];
-    self.socketManager.responseSerializer = [RBKSocketDataResponseSerializer serializer];
-    
-    __block BOOL success = NO;
-    NSString *sentMessage = @"Hello, World!";
-    NSData *dataMessage = [sentMessage dataUsingEncoding:NSUTF8StringEncoding];
-    __block NSData *responseMessage = nil;
-    [self.socketManager sendSocketOperationWithFrame:sentMessage success:^(RBKSocketOperation *operation, id responseObject) {
-        success = YES;
-        responseMessage = responseObject;
-    } failure:^(RBKSocketOperation *operation, NSError *error) {
-        success = NO;
-    }];
-    expect(success).will.beTruthy();
-    expect(responseMessage).will.equal(dataMessage); // using data serializers, we can feed it data, and we get a data response
-    expect(responseMessage).willNot.equal(sentMessage);
-}
-
-
-- (void)testSocketEchoJSON {
-    
-    self.socketManager.requestSerializer = [RBKSocketJSONRequestSerializer serializer];
-    self.socketManager.responseSerializer = [RBKSocketJSONResponseSerializer serializer];
-    
-    __block BOOL success = NO;
-    NSDictionary *sentMessage = @{@"key": @"value"};
-    __block NSDictionary *responseMessage = nil;
-    [self.socketManager sendSocketOperationWithFrame:sentMessage success:^(RBKSocketOperation *operation, id responseObject) {
-        success = YES;
-        responseMessage = responseObject;
-    } failure:^(RBKSocketOperation *operation, NSError *error) {
-        success = NO;
-    }];
-    expect(success).will.beTruthy();
-    expect(responseMessage).will.equal(sentMessage); // using JSON serializers, we can feed it JSON, and we get a JSON response
-}
-
-// JSON:
-// data to JSON
-// string to JSON
-// JSON to string?
-// JSON to data?
-
 - (void)testSocketSTOMPConnect {
     
     self.currentScenario = RBKTestScenarioStompConnect;
 
-    self.socketManager.requestSerializer = [RBKSocketStompRequestSerializer serializer];
-    self.socketManager.responseSerializer = [RBKSocketStompResponseSerializer serializer];
+    self.stompSocket.requestSerializer = [RBKSocketStompRequestSerializer serializer];
+    self.stompSocket.responseSerializer = [RBKSocketStompResponseSerializer serializer];
     
     RBKStompFrame *connectMessage = [RBKStompFrame connectFrameWithLogin:@"username" passcode:@"passcode" host:[[NSURL URLWithString:hostURL] host]];
     
     __block BOOL success = NO;
     __block RBKStompFrame *responseMessage = nil;
-    [self.socketManager sendSocketOperationWithFrame:connectMessage success:^(RBKSocketOperation *operation, id responseObject) {
+    [self.stompSocket sendSocketOperationWithFrame:connectMessage success:^(RBKSocketOperation *operation, id responseObject) {
         success = YES;
         responseMessage = responseObject; // This response object will be a CONNECTED frame
-    } failure:^(RBKSocketOperation *operation, NSError *error) {
+    }                                      failure:^(RBKSocketOperation *operation, NSError *error) {
         success = NO;
     }];
     expect(success).will.beTruthy();
@@ -205,65 +105,65 @@ NSString * const hostURL = @"ws://localhost";
     
     self.currentScenario = RBKTestScenarioStompConnectServerHeartbeat;
     
-    self.socketManager.requestSerializer = [RBKSocketStompRequestSerializer serializer];
-    RBKSocketStompRequestSerializer *requestSerializer = (id)self.socketManager.requestSerializer;
-    requestSerializer.delegate = self.socketManager;
-    self.socketManager.responseSerializer = [RBKSocketStompResponseSerializer serializer];
-    RBKSocketStompResponseSerializer *responseSerializer = (id)self.socketManager.responseSerializer;
-    responseSerializer.delegate = self.socketManager;
+    self.stompSocket.requestSerializer = [RBKSocketStompRequestSerializer serializer];
+    RBKSocketStompRequestSerializer *requestSerializer = (id)self.stompSocket.requestSerializer;
+    requestSerializer.delegate = self.stompSocket;
+    self.stompSocket.responseSerializer = [RBKSocketStompResponseSerializer serializer];
+    RBKSocketStompResponseSerializer *responseSerializer = (id)self.stompSocket.responseSerializer;
+    responseSerializer.delegate = self.stompSocket;
     
     RBKStompFrame *connectMessage = [RBKStompFrame connectFrameWithLogin:@"username" passcode:@"passcode" host:[[NSURL URLWithString:hostURL] host] supportedOutgoingHeartbeat:0 desiredIncomingHeartbeat:1000];
     
     __block BOOL success = NO;
     __block RBKStompFrame *responseMessage = nil;
     __block NSDate *dateSinceLastResponse = [NSDate distantPast];
-    [self.socketManager sendSocketOperationWithFrame:connectMessage success:^(RBKSocketOperation *operation, id responseObject) {
+    [self.stompSocket sendSocketOperationWithFrame:connectMessage success:^(RBKSocketOperation *operation, id responseObject) {
         success = YES;
         responseMessage = responseObject; // This response object will be a CONNECTED frame
         dateSinceLastResponse = [NSDate date];
-    } failure:^(RBKSocketOperation *operation, NSError *error) {
+    }                                      failure:^(RBKSocketOperation *operation, NSError *error) {
         success = NO;
     }];
     expect(success).will.beTruthy();
-    expect([self.socketManager numberOfReceivedHeartbeats]).will.beGreaterThanOrEqualTo(2);
+    expect([self.stompSocket numberOfReceivedHeartbeats]).will.beGreaterThanOrEqualTo(2);
     
     // this is a block just so we can see (during development of the tests) the difference between the expected heartbeat interval and when the block gets called
     NSTimeInterval(^expectedInterval)(void) = ^(void) {
-        // NSTimeInterval actual = [self.socketManager timeIntervalBetweenPreviousHeartbeats];
+        // NSTimeInterval actual = [self.webSocket timeIntervalBetweenPreviousHeartbeats];
         NSTimeInterval expected = [[NSDate date] timeIntervalSinceDate:dateSinceLastResponse];
         // NSLog(@"actual interval: %f\nexpected interval: %f", actual, expected);
         return expected;
     };
     
-    expect([self.socketManager timeIntervalBetweenPreviousHeartbeats]).will.beCloseToWithin(expectedInterval(), 0.1);
+    expect([self.stompSocket timeIntervalBetweenPreviousHeartbeats]).will.beCloseToWithin(expectedInterval(), 0.1);
 }
 
 - (void)testSocketSTOMPConnectClientHeartbeat {
     
     self.currentScenario = RBKTestScenarioStompConnectClientHeartbeat;
     
-    self.socketManager.requestSerializer = [RBKSocketStompRequestSerializer serializer];
-    RBKSocketStompRequestSerializer *requestSerializer = (id)self.socketManager.requestSerializer;
-    requestSerializer.delegate = self.socketManager;
-    self.socketManager.responseSerializer = [RBKSocketStompResponseSerializer serializer];
-    RBKSocketStompResponseSerializer *responseSerializer = (id)self.socketManager.responseSerializer;
-    responseSerializer.delegate = self.socketManager;
+    self.stompSocket.requestSerializer = [RBKSocketStompRequestSerializer serializer];
+    RBKSocketStompRequestSerializer *requestSerializer = (id)self.stompSocket.requestSerializer;
+    requestSerializer.delegate = self.stompSocket;
+    self.stompSocket.responseSerializer = [RBKSocketStompResponseSerializer serializer];
+    RBKSocketStompResponseSerializer *responseSerializer = (id)self.stompSocket.responseSerializer;
+    responseSerializer.delegate = self.stompSocket;
     
     RBKStompFrame *connectMessage = [RBKStompFrame connectFrameWithLogin:@"username" passcode:@"passcode" host:[[NSURL URLWithString:hostURL] host] supportedOutgoingHeartbeat:1000 desiredIncomingHeartbeat:0];
     
     __block BOOL success = NO;
     __block RBKStompFrame *responseMessage = nil;
     __block NSDate *dateSinceLastResponse = [NSDate distantPast];
-    [self.socketManager sendSocketOperationWithFrame:connectMessage success:^(RBKSocketOperation *operation, id responseObject) {
+    [self.stompSocket sendSocketOperationWithFrame:connectMessage success:^(RBKSocketOperation *operation, id responseObject) {
         success = YES;
         responseMessage = responseObject; // This response object will be a CONNECTED frame
-        
+
         dateSinceLastResponse = [NSDate date];
-    } failure:^(RBKSocketOperation *operation, NSError *error) {
+    }                                      failure:^(RBKSocketOperation *operation, NSError *error) {
         success = NO;
     }];
     expect(success).will.beTruthy();
-    expect([self.socketManager numberOfSentHeartbeats]).will.beGreaterThanOrEqualTo(2);
+    expect([self.stompSocket numberOfSentHeartbeats]).will.beGreaterThanOrEqualTo(2);
     expect(self.isCurrentScenarioSuccessful).will.beTruthy(); // indicates that the client heartbeat was received
 }
 
@@ -277,12 +177,12 @@ NSString * const hostURL = @"ws://localhost";
     
     self.currentScenario = RBKTestScenarioStompSubscribe;
 
-    self.socketManager.requestSerializer = [RBKSocketStompRequestSerializer serializer];
-    RBKSocketStompRequestSerializer *requestSerializer = (id)self.socketManager.requestSerializer;
-    requestSerializer.delegate = self.socketManager;
-    self.socketManager.responseSerializer = [RBKSocketStompResponseSerializer serializer];
-    RBKSocketStompResponseSerializer *responseSerializer = (id)self.socketManager.responseSerializer;
-    responseSerializer.delegate = self.socketManager;
+    self.stompSocket.requestSerializer = [RBKSocketStompRequestSerializer serializer];
+    RBKSocketStompRequestSerializer *requestSerializer = (id)self.stompSocket.requestSerializer;
+    requestSerializer.delegate = self.stompSocket;
+    self.stompSocket.responseSerializer = [RBKSocketStompResponseSerializer serializer];
+    RBKSocketStompResponseSerializer *responseSerializer = (id)self.stompSocket.responseSerializer;
+    responseSerializer.delegate = self.stompSocket;
     
     __block BOOL subscriptionHandlerCalled = NO;
     __block RBKStompFrame *subscriptionResponseFrame = nil;
@@ -294,10 +194,10 @@ NSString * const hostURL = @"ws://localhost";
     }];
     
     __block BOOL success = NO;
-    [self.socketManager sendSocketOperationWithFrame:subscriptionFrame success:^(RBKSocketOperation *operation, id responseObject) {
+    [self.stompSocket sendSocketOperationWithFrame:subscriptionFrame success:^(RBKSocketOperation *operation, id responseObject) {
         success = YES;
-        
-    } failure:^(RBKSocketOperation *operation, NSError *error) {
+
+    }                                      failure:^(RBKSocketOperation *operation, NSError *error) {
         success = NO;
     }];
     expect(success).will.beTruthy();
@@ -312,12 +212,12 @@ NSString * const hostURL = @"ws://localhost";
     
     self.currentScenario = RBKTestScenarioStompSubscribeClientAck;
     
-    self.socketManager.requestSerializer = [RBKSocketStompRequestSerializer serializer];
-    RBKSocketStompRequestSerializer *requestSerializer = (id)self.socketManager.requestSerializer;
-    requestSerializer.delegate = self.socketManager;
-    self.socketManager.responseSerializer = [RBKSocketStompResponseSerializer serializer];
-    RBKSocketStompResponseSerializer *responseSerializer = (id)self.socketManager.responseSerializer;
-    responseSerializer.delegate = self.socketManager;
+    self.stompSocket.requestSerializer = [RBKSocketStompRequestSerializer serializer];
+    RBKSocketStompRequestSerializer *requestSerializer = (id)self.stompSocket.requestSerializer;
+    requestSerializer.delegate = self.stompSocket;
+    self.stompSocket.responseSerializer = [RBKSocketStompResponseSerializer serializer];
+    RBKSocketStompResponseSerializer *responseSerializer = (id)self.stompSocket.responseSerializer;
+    responseSerializer.delegate = self.stompSocket;
     
     __block BOOL subscriptionHandlerCalled = NO;
     __block RBKStompFrame *subscriptionResponseFrame = nil;
@@ -329,10 +229,10 @@ NSString * const hostURL = @"ws://localhost";
     }];
     
     __block BOOL success = NO;
-    [self.socketManager sendSocketOperationWithFrame:subscriptionFrame success:^(RBKSocketOperation *operation, id responseObject) {
+    [self.stompSocket sendSocketOperationWithFrame:subscriptionFrame success:^(RBKSocketOperation *operation, id responseObject) {
         success = YES;
-        
-    } failure:^(RBKSocketOperation *operation, NSError *error) {
+
+    }                                      failure:^(RBKSocketOperation *operation, NSError *error) {
         success = NO;
     }];
     expect(success).will.beTruthy();
@@ -343,12 +243,12 @@ NSString * const hostURL = @"ws://localhost";
     
     self.currentScenario = RBKTestScenarioStompSubscribeClientNack;
     
-    self.socketManager.requestSerializer = [RBKSocketStompRequestSerializer serializer];
-    RBKSocketStompRequestSerializer *requestSerializer = (id)self.socketManager.requestSerializer;
-    requestSerializer.delegate = self.socketManager;
-    self.socketManager.responseSerializer = [RBKSocketStompResponseSerializer serializer];
-    RBKSocketStompResponseSerializer *responseSerializer = (id)self.socketManager.responseSerializer;
-    responseSerializer.delegate = self.socketManager;
+    self.stompSocket.requestSerializer = [RBKSocketStompRequestSerializer serializer];
+    RBKSocketStompRequestSerializer *requestSerializer = (id)self.stompSocket.requestSerializer;
+    requestSerializer.delegate = self.stompSocket;
+    self.stompSocket.responseSerializer = [RBKSocketStompResponseSerializer serializer];
+    RBKSocketStompResponseSerializer *responseSerializer = (id)self.stompSocket.responseSerializer;
+    responseSerializer.delegate = self.stompSocket;
     
     __block BOOL subscriptionHandlerCalled = NO;
     __block RBKStompFrame *subscriptionResponseFrame = nil;
@@ -360,10 +260,10 @@ NSString * const hostURL = @"ws://localhost";
     }];
     
     __block BOOL success = NO;
-    [self.socketManager sendSocketOperationWithFrame:subscriptionFrame success:^(RBKSocketOperation *operation, id responseObject) {
+    [self.stompSocket sendSocketOperationWithFrame:subscriptionFrame success:^(RBKSocketOperation *operation, id responseObject) {
         success = YES;
-        
-    } failure:^(RBKSocketOperation *operation, NSError *error) {
+
+    }                                      failure:^(RBKSocketOperation *operation, NSError *error) {
         success = NO;
     }];
     expect(success).will.beTruthy();
@@ -380,22 +280,22 @@ NSString * const hostURL = @"ws://localhost";
     
     self.currentScenario = RBKTestScenarioStompSend;
     
-    self.socketManager.requestSerializer = [RBKSocketStompRequestSerializer serializer];
-    RBKSocketStompRequestSerializer *requestSerializer = (id)self.socketManager.requestSerializer;
-    requestSerializer.delegate = self.socketManager;
-    self.socketManager.responseSerializer = [RBKSocketStompResponseSerializer serializer];
-    RBKSocketStompResponseSerializer *responseSerializer = (id)self.socketManager.responseSerializer;
-    responseSerializer.delegate = self.socketManager;
+    self.stompSocket.requestSerializer = [RBKSocketStompRequestSerializer serializer];
+    RBKSocketStompRequestSerializer *requestSerializer = (id)self.stompSocket.requestSerializer;
+    requestSerializer.delegate = self.stompSocket;
+    self.stompSocket.responseSerializer = [RBKSocketStompResponseSerializer serializer];
+    RBKSocketStompResponseSerializer *responseSerializer = (id)self.stompSocket.responseSerializer;
+    responseSerializer.delegate = self.stompSocket;
     
     NSString *sendBody = @"Message for you sir";
     
     RBKStompFrame *sendFrame = [RBKStompFrame sendFrameWithDestination:@"/foo/bar" headers:@{@"x-test": @"12345"} body:sendBody];
     __block BOOL success = NO;
     __block RBKStompFrame *responseFrame = nil;
-    [self.socketManager sendSocketOperationWithFrame:sendFrame success:^(RBKSocketOperation *operation, id responseObject) {
+    [self.stompSocket sendSocketOperationWithFrame:sendFrame success:^(RBKSocketOperation *operation, id responseObject) {
         success = YES;
         responseFrame = responseObject; // probably isn't echo'd per the standard, but this at least validates that send messages are being sent
-    } failure:^(RBKSocketOperation *operation, NSError *error) {
+    }                                      failure:^(RBKSocketOperation *operation, NSError *error) {
         success = NO;
     }];
     expect(success).will.beTruthy();
@@ -409,12 +309,12 @@ NSString * const hostURL = @"ws://localhost";
     
     self.currentScenario = RBKTestScenarioStompSubscribe;
     
-    self.socketManager.requestSerializer = [RBKSocketStompRequestSerializer serializer];
-    RBKSocketStompRequestSerializer *requestSerializer = (id)self.socketManager.requestSerializer;
-    requestSerializer.delegate = self.socketManager;
-    self.socketManager.responseSerializer = [RBKSocketStompResponseSerializer serializer];
-    RBKSocketStompResponseSerializer *responseSerializer = (id)self.socketManager.responseSerializer;
-    responseSerializer.delegate = self.socketManager;
+    self.stompSocket.requestSerializer = [RBKSocketStompRequestSerializer serializer];
+    RBKSocketStompRequestSerializer *requestSerializer = (id)self.stompSocket.requestSerializer;
+    requestSerializer.delegate = self.stompSocket;
+    self.stompSocket.responseSerializer = [RBKSocketStompResponseSerializer serializer];
+    RBKSocketStompResponseSerializer *responseSerializer = (id)self.stompSocket.responseSerializer;
+    responseSerializer.delegate = self.stompSocket;
     
     __block NSUInteger subscriptionHandlerCalledCounter = 0;
     __block RBKStompFrame *subscriptionResponseFrame = nil;
@@ -428,19 +328,18 @@ NSString * const hostURL = @"ws://localhost";
     
     __block BOOL success = NO;
     __weak typeof(self)weakSelf = self;
-    [self.socketManager sendSocketOperationWithFrame:subscriptionFrame success:^(RBKSocketOperation *operation, id responseObject) {
-        
+    [self.stompSocket sendSocketOperationWithFrame:subscriptionFrame success:^(RBKSocketOperation *operation, id responseObject) {
+
         // now that we've subscribed, unsubscribe
         weakSelf.currentScenario = RBKTestScenarioStompUnsubscribe;
-        
-        [weakSelf.socketManager sendSocketOperationWithFrame:unsubscribeFrame success:^(RBKSocketOperation *operation, id responseObject) {
+
+        [weakSelf.stompSocket sendSocketOperationWithFrame:unsubscribeFrame success:^(RBKSocketOperation *operation, id responseObject) {
             success = YES;
-        } failure:^(RBKSocketOperation *operation, NSError *error) {
+        }                                          failure:^(RBKSocketOperation *operation, NSError *error) {
             success = NO;
         }];
 
-        
-    } failure:^(RBKSocketOperation *operation, NSError *error) {
+    }                                      failure:^(RBKSocketOperation *operation, NSError *error) {
         success = NO;
     }];
     
