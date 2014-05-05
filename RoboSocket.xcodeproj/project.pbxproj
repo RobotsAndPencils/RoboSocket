@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3ED7E88500E95CA01C810AE3 /* RBKWebSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 3ED7EBB5704F1371F6D76DE5 /* RBKWebSocket.m */; };
+		3ED7E92D74AB6B5C12464AD5 /* RBKWebSocketTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 3ED7E738E4DF77816FF7196A /* RBKWebSocketTests.m */; };
 		4F4EF7E6183533BE00016386 /* RBKStompFrame.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F4EF7E5183533BE00016386 /* RBKStompFrame.m */; };
 		4F50DAEB180EE6530035BE77 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F50DAEA180EE6530035BE77 /* Foundation.framework */; };
 		4F50DAED180EE6530035BE77 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F50DAEC180EE6530035BE77 /* CoreGraphics.framework */; };
@@ -24,7 +26,7 @@
 		4F50DB35180EEFE80035BE77 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F50DAEA180EE6530035BE77 /* Foundation.framework */; };
 		4F50DB36180EEFE80035BE77 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F50DAEE180EE6530035BE77 /* UIKit.framework */; };
 		4F50DB3F180EEFE80035BE77 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 4F50DB3D180EEFE80035BE77 /* InfoPlist.strings */; };
-		4F50DB41180EEFE80035BE77 /* RoboSocketTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F50DB40180EEFE80035BE77 /* RoboSocketTests.m */; };
+		4F50DB41180EEFE80035BE77 /* RBKSTOMPSocketTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F50DB40180EEFE80035BE77 /* RBKSTOMPSocketTests.m */; };
 		4F7F5A1C180EFB4400534BC7 /* Main_iPad.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4F7F5A18180EFB4400534BC7 /* Main_iPad.storyboard */; };
 		4F7F5A1D180EFB4400534BC7 /* Main_iPhone.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4F7F5A1A180EFB4400534BC7 /* Main_iPhone.storyboard */; };
 		4F7F5A20180EFB5100534BC7 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 4F7F5A1E180EFB5100534BC7 /* InfoPlist.strings */; };
@@ -35,7 +37,7 @@
 		4F88E57E180F960200663E45 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F88E57B180F93E200663E45 /* SystemConfiguration.framework */; };
 		4F8ED12C182447F800055715 /* libicucore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F8ED12B182447F800055715 /* libicucore.dylib */; };
 		4F8ED12F18245D3900055715 /* RBKSocketOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F8ED12E18245D3900055715 /* RBKSocketOperation.m */; };
-		4F8ED13B182467E100055715 /* RBKSocketManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F8ED13A182467E100055715 /* RBKSocketManager.m */; };
+		4F8ED13B182467E100055715 /* RBKSTOMPSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F8ED13A182467E100055715 /* RBKSTOMPSocket.m */; };
 		4F8ED140182477A300055715 /* RBKSocketRequestSerialization.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F8ED13D182477A300055715 /* RBKSocketRequestSerialization.m */; };
 		4F8ED141182477A300055715 /* RBKSocketResponseSerialization.m in Sources */ = {isa = PBXBuildFile; fileRef = 4F8ED13F182477A300055715 /* RBKSocketResponseSerialization.m */; };
 		4FBFFFEB1820C3BC0017C48C /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4F7F5A15180EF74200534BC7 /* Images.xcassets */; };
@@ -77,6 +79,9 @@
 
 /* Begin PBXFileReference section */
 		0741FCACF876427B9BE1C41A /* Pods-RoboSocketTests.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RoboSocketTests.xcconfig"; path = "Pods/Pods-RoboSocketTests.xcconfig"; sourceTree = "<group>"; };
+		3ED7E738E4DF77816FF7196A /* RBKWebSocketTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RBKWebSocketTests.m; sourceTree = "<group>"; };
+		3ED7EBB5704F1371F6D76DE5 /* RBKWebSocket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RBKWebSocket.m; sourceTree = "<group>"; };
+		3ED7EBD6AF7C40F01B2963EA /* RBKWebSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RBKWebSocket.h; sourceTree = "<group>"; };
 		4F4EF7E4183533BE00016386 /* RBKStompFrame.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RBKStompFrame.h; sourceTree = "<group>"; };
 		4F4EF7E5183533BE00016386 /* RBKStompFrame.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RBKStompFrame.m; sourceTree = "<group>"; };
 		4F50DAE7180EE6530035BE77 /* RoboSocketExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoboSocketExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -99,7 +104,7 @@
 		4F50DB33180EEFE80035BE77 /* RoboSocketTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoboSocketTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4F50DB3C180EEFE80035BE77 /* RoboSocketTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "RoboSocketTests-Info.plist"; sourceTree = "<group>"; };
 		4F50DB3E180EEFE80035BE77 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		4F50DB40180EEFE80035BE77 /* RoboSocketTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = RoboSocketTests.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
+		4F50DB40180EEFE80035BE77 /* RBKSTOMPSocketTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = RBKSTOMPSocketTests.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		4F7F5A15180EF74200534BC7 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Example/RoboSocketExample/Images.xcassets; sourceTree = SOURCE_ROOT; };
 		4F7F5A19180EFB4400534BC7 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Example/RoboSocketExample/Base.lproj/Main_iPad.storyboard; sourceTree = SOURCE_ROOT; };
 		4F7F5A1B180EFB4400534BC7 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Example/RoboSocketExample/Base.lproj/Main_iPhone.storyboard; sourceTree = SOURCE_ROOT; };
@@ -111,8 +116,8 @@
 		4F8ED12B182447F800055715 /* libicucore.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libicucore.dylib; path = usr/lib/libicucore.dylib; sourceTree = SDKROOT; };
 		4F8ED12D18245D3900055715 /* RBKSocketOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RBKSocketOperation.h; sourceTree = "<group>"; };
 		4F8ED12E18245D3900055715 /* RBKSocketOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RBKSocketOperation.m; sourceTree = "<group>"; };
-		4F8ED139182467E100055715 /* RBKSocketManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RBKSocketManager.h; sourceTree = "<group>"; };
-		4F8ED13A182467E100055715 /* RBKSocketManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RBKSocketManager.m; sourceTree = "<group>"; };
+		4F8ED139182467E100055715 /* RBKSTOMPSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RBKSTOMPSocket.h; sourceTree = "<group>"; };
+		4F8ED13A182467E100055715 /* RBKSTOMPSocket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RBKSTOMPSocket.m; sourceTree = "<group>"; };
 		4F8ED13C182477A300055715 /* RBKSocketRequestSerialization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RBKSocketRequestSerialization.h; sourceTree = "<group>"; };
 		4F8ED13D182477A300055715 /* RBKSocketRequestSerialization.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RBKSocketRequestSerialization.m; sourceTree = "<group>"; };
 		4F8ED13E182477A300055715 /* RBKSocketResponseSerialization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RBKSocketResponseSerialization.h; sourceTree = "<group>"; };
@@ -266,8 +271,8 @@
 				4F50DB2D180EEFE80035BE77 /* RoboSocket.m */,
 				4F8ED12D18245D3900055715 /* RBKSocketOperation.h */,
 				4F8ED12E18245D3900055715 /* RBKSocketOperation.m */,
-				4F8ED139182467E100055715 /* RBKSocketManager.h */,
-				4F8ED13A182467E100055715 /* RBKSocketManager.m */,
+				4F8ED139182467E100055715 /* RBKSTOMPSocket.h */,
+				4F8ED13A182467E100055715 /* RBKSTOMPSocket.m */,
 				4F8ED13C182477A300055715 /* RBKSocketRequestSerialization.h */,
 				4F8ED13D182477A300055715 /* RBKSocketRequestSerialization.m */,
 				4F8ED13E182477A300055715 /* RBKSocketResponseSerialization.h */,
@@ -275,6 +280,8 @@
 				4F4EF7E4183533BE00016386 /* RBKStompFrame.h */,
 				4F4EF7E5183533BE00016386 /* RBKStompFrame.m */,
 				4F50DB29180EEFE80035BE77 /* Supporting Files */,
+				3ED7EBB5704F1371F6D76DE5 /* RBKWebSocket.m */,
+				3ED7EBD6AF7C40F01B2963EA /* RBKWebSocket.h */,
 			);
 			path = RoboSocket;
 			sourceTree = "<group>";
@@ -290,8 +297,9 @@
 		4F50DB3A180EEFE80035BE77 /* RoboSocketTests */ = {
 			isa = PBXGroup;
 			children = (
-				4F50DB40180EEFE80035BE77 /* RoboSocketTests.m */,
+				4F50DB40180EEFE80035BE77 /* RBKSTOMPSocketTests.m */,
 				4F50DB3B180EEFE80035BE77 /* Supporting Files */,
+				3ED7E738E4DF77816FF7196A /* RBKWebSocketTests.m */,
 			);
 			path = RoboSocketTests;
 			sourceTree = "<group>";
@@ -396,7 +404,7 @@
 						TestTargetID = 4F50DAE6180EE6530035BE77;
 					};
 					4F50DB32180EEFE80035BE77 = {
-						TestTargetID = 4F50DAE6180EE6530035BE77;
+						TestTargetID = 4F50DB25180EEFE80035BE77;
 					};
 				};
 			};
@@ -536,12 +544,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4F8ED13B182467E100055715 /* RBKSocketManager.m in Sources */,
+				4F8ED13B182467E100055715 /* RBKSTOMPSocket.m in Sources */,
 				4F8ED12F18245D3900055715 /* RBKSocketOperation.m in Sources */,
 				4F50DB2E180EEFE80035BE77 /* RoboSocket.m in Sources */,
 				4F8ED141182477A300055715 /* RBKSocketResponseSerialization.m in Sources */,
 				4F8ED140182477A300055715 /* RBKSocketRequestSerialization.m in Sources */,
 				4F4EF7E6183533BE00016386 /* RBKStompFrame.m in Sources */,
+				3ED7E88500E95CA01C810AE3 /* RBKWebSocket.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -549,7 +558,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4F50DB41180EEFE80035BE77 /* RoboSocketTests.m in Sources */,
+				4F50DB41180EEFE80035BE77 /* RBKSTOMPSocketTests.m in Sources */,
+				3ED7E92D74AB6B5C12464AD5 /* RBKWebSocketTests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -790,7 +800,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 0741FCACF876427B9BE1C41A /* Pods-RoboSocketTests.xcconfig */;
 			buildSettings = {
-				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/RoboSocketExample.app/RoboSocketExample";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(SDKROOT)/Developer/Library/Frameworks",
 					"$(inherited)",
@@ -804,7 +813,6 @@
 				);
 				INFOPLIST_FILE = "RoboSocketTests/RoboSocketTests-Info.plist";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				TEST_HOST = "$(BUNDLE_LOADER)";
 				WRAPPER_EXTENSION = xctest;
 			};
 			name = Debug;
@@ -813,7 +821,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 0741FCACF876427B9BE1C41A /* Pods-RoboSocketTests.xcconfig */;
 			buildSettings = {
-				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/RoboSocketExample.app/RoboSocketExample";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(SDKROOT)/Developer/Library/Frameworks",
 					"$(inherited)",
@@ -823,7 +830,6 @@
 				GCC_PREFIX_HEADER = "$(SRCROOT)/RoboSocket-Prefix.pch";
 				INFOPLIST_FILE = "RoboSocketTests/RoboSocketTests-Info.plist";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				TEST_HOST = "$(BUNDLE_LOADER)";
 				WRAPPER_EXTENSION = xctest;
 			};
 			name = Release;
