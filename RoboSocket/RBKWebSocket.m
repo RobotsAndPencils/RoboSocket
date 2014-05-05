@@ -24,6 +24,8 @@
         _socket = [[RoboSocket alloc] initWithSocketURL:socketURL];
         _socket.controlDelegate = self;
         _socket.defaultFrameDelegate = self;
+        _socket.responseFrameDelegate = self;
+        
         _operationQueue = [[NSOperationQueue alloc] init];
         _pendingOperations = [NSMutableArray array];
         _socketOpen = NO;
@@ -135,6 +137,11 @@
     [self.responseSerializer responseObjectForResponseFrame:message error:&error];
     if (error) {
         NSLog(@"Serializer error: %@", [error localizedDescription]);
+    }
+}
+- (void)webSocket:(RoboSocket *)webSocket didFailWithError:(NSError *)error {
+    if (self.failureBlock) {
+        self.failureBlock(error);
     }
 }
 @end

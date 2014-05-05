@@ -64,7 +64,11 @@
 
 - (void)webSocket:(SRWebSocket *)webSocket didFailWithError:(NSError *)error {
     // NSLog(@"socket failed");
-    [self.responseFrameDelegate webSocket:self didFailWithError:error];
+    if (self.responseFrameDelegate) {
+        [self.responseFrameDelegate webSocket:self didFailWithError:error];
+    } else {
+        [self.defaultFrameDelegate webSocket:self didFailWithError:error];
+    }
 }
 
 - (void)webSocket:(SRWebSocket *)webSocket didCloseWithCode:(NSInteger)code reason:(NSString *)reason wasClean:(BOOL)wasClean {

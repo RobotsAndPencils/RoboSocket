@@ -7,6 +7,7 @@
 #import "RBKSocketRequestSerialization.h"
 #import "RBKSocketResponseSerialization.h"
 
+typedef void (^RBKSocketFailureBlock)(NSError *error);
 
 @interface RBKWebSocket : NSObject
 
@@ -23,6 +24,8 @@
  */
 @property (nonatomic, strong) RBKSocketResponseSerializer <RBKSocketResponseSerialization> * responseSerializer;
 @property (assign, nonatomic, getter = socketIsOpen) BOOL socketOpen;
+@property (nonatomic, copy) RBKSocketFailureBlock failureBlock;
+
 - (instancetype)initWithSocketURL:(NSURL *)socketURL;
 /**
  Inclusion of success and/or failure block indicates that this operation expects a response as part of the operation
