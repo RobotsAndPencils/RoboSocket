@@ -32,6 +32,10 @@
     return self;
 }
 
+- (void)dealloc {
+    self.socket.delegate = nil;
+}
+
 - (void)openSocket {
     [self.socket open];
 }
